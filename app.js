@@ -103,6 +103,7 @@ const gameState = {
     intervalId: null,
     speed: 3,
     speechEnabled: true,
+    speechRate: 1.2,
     imagesLoaded: 0,
     loadedImages: {},
     drawnNumbersHistory: []
@@ -121,12 +122,16 @@ const elements = {
     speedControl: document.getElementById('speed-control'),
     speedSlider: document.getElementById('speed-slider'),
     speedValue: document.getElementById('speed-value'),
+    speechRateControl: document.getElementById('speech-rate-control'),
+    speechRateSlider: document.getElementById('speech-rate-slider'),
+    speechRateValue: document.getElementById('speech-rate-value'),
     modeRadios: document.querySelectorAll('input[name="mode"]'),
     loadingScreen: document.getElementById('loading-screen'),
     loadingStatus: document.getElementById('loading-status'),
     container: document.querySelector('.container'),
     firstNumbers: document.getElementById('first-numbers'),
-    lastNumbers: document.getElementById('last-numbers')
+    lastNumbers: document.getElementById('last-numbers'),
+
 };
 
 // Función para cargar imágenes
@@ -271,6 +276,7 @@ function setupEventListeners() {
     elements.autoBtn.addEventListener('click', toggleAutoMode);
     elements.winnerBtn.addEventListener('click', declareWinner);
     elements.resetBtn.addEventListener('click', resetGame);
+
     
     elements.speedSlider.addEventListener('input', (e) => {
         gameState.speed = parseInt(e.target.value);
@@ -280,6 +286,11 @@ function setupEventListeners() {
             clearInterval(gameState.intervalId);
             startAutoMode();
         }
+    });
+    
+    elements.speechRateSlider.addEventListener('input', (e) => {
+        gameState.speechRate = parseFloat(e.target.value);
+        elements.speechRateValue.textContent = gameState.speechRate.toFixed(1);
     });
 }
 
@@ -403,7 +414,7 @@ function announceNumber(numberData) {
     const utterance = new SpeechSynthesisUtterance();
     utterance.text = textToSpeak;
     utterance.lang = 'es-MX';
-    utterance.rate = 1.2;
+    utterance.rate = gameState.speechRate;
     utterance.pitch = 0.9;
     
     const configureVoice = () => {
@@ -552,6 +563,8 @@ function resetGame() {
     updateControls();
     setTimeout(setupImageZoom, 100);
 }
+
+
 
 // Initialize the game when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initGame);
