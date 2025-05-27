@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loteria Campechana</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #005f73;
+            --secondary-blue: #0a9396;
+            --light-blue: #94d2bd;
+            --dark-green: #1a7431;
+            --medium-green: #2a9d8f;
+            --light-green: #a7c4bc;
+            --dark-yellow: #ca6702;
+            --medium-yellow: #ee9b00;
+            --light-yellow: #e9d8a6;
+            --white: #ffffff;
+            --light-gray: #f8f9fa;
+            --medium-gray: #dee2e6;
+            --dark-gray: #495057;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            line-height: 1.6;
+            padding-bottom: 50px; /* Espacio para el footer */
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--dark-gray);
+        }
+
+        #app-flow {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        section {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .step-header h2 {
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hidden-step {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .active-step {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background-color: var(--medium-gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn.secondary {
+            background-color: var(--medium-yellow);
+            color: var(--dark-gray);
+        }
+
+        .btn.secondary:hover {
+            background-color: var(--dark-yellow);
+            color: white;
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .number-cell {
+            background-color: var(--light-gray);
+            border: 2px solid var(--medium-gray);
+            border-radius: 5px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .number-cell:hover {
+            background-color: var(--medium-gray);
+        }
+
+        .number-cell.selected {
+            background-color: var(--primary-blue);
+            color: white;
+            border-color: var(--secondary-blue);
+            transform: scale(1.05);
+        }
+
+        .selection-info {
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+
+        .selection-info span {
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .bingo-card {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--medium-yellow);
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .card-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 5px;
+            background-color: var(--light-gray);
+            border: 1px solid var(--medium-gray);
+        }
+
+        .card-cell.highlight {
+            background-color: var(--light-yellow);
+            border-color: var(--medium-yellow);
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .preview-card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .preview-card canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loader {
+            text-align: center;
+        }
+
+        .spinner {
+            border: 5px solid var(--light-blue);
+            border-top: 5px solid var(--primary-blue);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--primary-blue);
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .number-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            .cards-container, .preview-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .step-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .step-actions {
+                width: 100%;
+                display: flex;
+                gap: 10px;
+            }
+            
+            .step-actions button {
+                flex-grow: 1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .number-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Loteria Campechana</h1>
+            <p>Crea tus cartillas personalizadas con los repetidos que elijas</p>
+        </header>
+
+        <div id="app-flow">
+            <!-- Paso 1: Selección de números -->
+            <section id="number-selection" class="active-step">
+                <h2><i class="fas fa-mouse-pointer"></i> Selecciona 10 números</h2>
+                <div class="number-grid" id="number-grid"></div>
+                <div class="selection-info">
+                    <span id="selected-count">0</span>/10 números seleccionados
+                </div>
+                <button id="confirm-selection" class="btn" disabled>
+                    <i class="fas fa-check-circle"></i> Confirmar Selección
+                </button>
+            </section>
+
+            <!-- Paso 2: Generación de cartillas -->
+            <section id="card-generation" class="hidden-step">
+                <div class="step-header">
+                    <h2><i class="fas fa-th-large"></i> Tus Cartillas de Bingo</h2>
+                    <div class="step-actions">
+                        <button id="regenerate-cards" class="btn secondary">
+                            <i class="fas fa-sync-alt"></i> Regenerar
+                        </button>
+                        <button id="change-numbers" class="btn secondary">
+                            <i class="fas fa-edit"></i> Cambiar Números
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="cards-container" id="cards-container"></div>
+                
+                <button id="generate-images" class="btn">
+                    <i class="fas fa-image"></i> Generar Imágenes
+                </button>
+            </section>
+
+            <!-- Paso 3: Visualización de imágenes -->
+            <section id="image-preview" class="hidden-step">
+                <div class="step-header">
+                    <h2><i class="fas fa-images"></i> Previsualización</h2>
+                    <button id="back-to-cards" class="btn secondary">
+                        <i class="fas fa-arrow-left"></i> Volver a Cartillas
+                    </button>
+                </div>
+                
+                <div class="preview-container" id="preview-container"></div>
+            </section>
+        </div>
+
+        <footer>
+            Creado por E. Sanchez - 2025
+        </footer>
+    </div>
+
+    <div class="loader-overlay" id="loader">
+        <div class="loader">
+            <div class="spinner"></div>
+            <p>Generando imágenes...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

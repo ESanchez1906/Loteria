@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotería Campechana</title>
+    <style>
+        :root {
+            --primary-color: #082E4B;
+            --secondary-color: #E74C3C;
+            --background-color: #FFFFFF;
+            --text-color: #333333;
+            --border-color: #DDDDDD;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .main-panel {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .numbers-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 100%;
+            padding: 10px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .center-panel {
+            flex: 1.7;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .current-number {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .number-display {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .image-container {
+            width: 340px;
+            height: 340px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+
+        .description {
+            font-size: 1.5rem;
+            text-align: center;
+            min-height: 2.5rem;
+        }
+
+        .drawn-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .drawn-number::after {
+            content: attr(data-description);
+            position: absolute;
+            width: 120px;
+            background: white;
+            padding: 5px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 0.8rem;
+            color: var(--text-color);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 10;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .drawn-number:hover::after {
+            opacity: 1;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto 0;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .speed-control {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background-color: #0A4B75;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background-color: #CCCCCC;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+
+        .board-container {
+            margin-top: 30px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+        }
+
+        .board-cell {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #F0F0F0;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: visible;
+        }
+
+        .board-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            filter: grayscale(100%) brightness(0.7);
+            transform: scale(1);
+            will-change: transform, filter;
+            position: relative;
+            z-index: 1;
+        }
+
+        .board-cell:hover img:not(.selected) {
+            transform: scale(1.15);
+            filter: grayscale(0%) brightness(1);
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .board-cell.touch-zoom img:not(.selected) {
+            transform: scale(1.2);
+            filter: grayscale(0%) brightness(1);
+            z-index: 10;
+        }
+
+        .board-cell.selected img {
+            filter: grayscale(0%) brightness(1) !important;
+            transform: scale(1) !important;
+            box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .board-cell.selected {
+            animation: pulse 0.5s ease;
+        }
+
+        .board-cell .number-text {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            z-index: 2;
+        }
+
+        .board-cell.fallback {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .main-panel {
+                flex-direction: column;
+            }
+            
+            .numbers-column, .center-panel {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .numbers-grid {
+                grid-template-columns: repeat(5, 1fr);
+                max-height: none;
+            }
+            
+            .board {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            .number-display {
+                font-size: 3rem;
+            }
+            
+            .image-container {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .description {
+                font-size: 1.2rem;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+
+            .board-cell.touch-zoom img {
+                transform: scale(1.5) !important;
+            }
+
+            .speed-control {
+                flex-wrap: wrap;
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .speed-control label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+        }
+
+        .winner-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 1000;
+            animation: fadeIn 0.5s;
+        }
+
+        .winner-message {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .winner-message h2 {
+            color: var(--secondary-color);
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .winner-message p {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            animation: confettiFall 5s linear forwards;
+        }
+
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .fallback-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <h2>Cargando Lotería Campechana...</h2>
+        <p id="loading-status">Iniciando</p>
+    </div>
+
+    <div class="container" style="display: none;">
+        <h1>Lotería Campechana</h1>
+        
+        <div class="main-panel">
+            <div class="numbers-column">
+                <div class="numbers-grid" id="first-numbers"></div>
+            </div>
+            
+            <div class="center-panel">
+                <div class="current-number">
+                    <div class="number-display">--</div>
+                    <div class="image-container">
+                        <img id="current-image" src="" alt="Número actual">
+                    </div>
+                    <div class="description" id="current-description">Presiona "Siguiente número" para comenzar</div>
+                </div>
+                
+                <div class="controls">
+                    <div class="mode-selector">
+                        <label>
+                            <input type="radio" name="mode" value="manual" checked> Manual
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="auto"> Automático
+                        </label>
+                    </div>
+                    
+                    <div class="speed-control" id="speed-control" style="display: none;">
+                        <label>Tiempo entre números:</label>
+                        <input type="range" id="speed-slider" min="1" max="10" value="3">
+                        <span id="speed-value">3s</span>
+                    </div>
+                    
+                    <div class="speed-control" id="speech-rate-control">
+                        <label>Velocidad de voz:</label>
+                        <input type="range" id="speech-rate-slider" min="0.5" max="2" step="0.1" value="1.2">
+                        <span id="speech-rate-value">1.2</span>
+                    </div>
+                    
+                    <div class="buttons">
+                        <button id="next-btn">Siguiente número</button>
+                        <button id="auto-btn" style="display: none;">Pausar</button>
+                        <button id="winner-btn">Ganador!</button>
+                        <button id="reset-btn" style="display: none;">Reiniciar</button>
+
+                    </div>
+                </div>
+            </div>
+            
+            <div class="numbers-column">
+                <div class="numbers-grid" id="last-numbers"></div>
+            </div>
+        </div>
+        
+        <div class="board-container">
+            <h2>Tablero</h2>
+            <div class="board" id="board"></div>
+        </div>
+    </div>
+
+    <footer>
+        Creado por E.Sanchez - 2025
+    </footer>
+
+
+    <script src="app.js"></script>
+</body>
+</html>
