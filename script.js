@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewContainer = document.getElementById('preview-container');
     const backToCardsBtn = document.getElementById('back-to-cards');
     const loader = document.getElementById('loader');
+    const designSelector = document.getElementById('design-style');
     
     // Secciones del flujo
     const numberSelectionSection = document.getElementById('number-selection');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Estado de la aplicación
     let selectedNumbers = [];
     let bingoCards = [];
+    let currentImageFormat = 'webp'; // Valor por defecto
     
     // Inicializar la aplicación
     initNumberGrid();
@@ -29,6 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
     changeNumbersBtn.addEventListener('click', goBackToNumberSelection);
     generateImagesBtn.addEventListener('click', generateCardImages);
     backToCardsBtn.addEventListener('click', goBackToCardGeneration);
+    designSelector.addEventListener('change', function() {
+        currentImageFormat = this.value;
+        initNumberGrid();
+    });
     
     // Funciones
     
@@ -42,22 +48,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Crear elemento de imagen
             const img = document.createElement('img');
-            img.src = `${i}.webp`;
             img.alt = `Número ${i}`;
-            img.onerror = function() {
-                // Si la imagen falla al cargar, mostrar un fondo de color
-                this.style.display = 'none';
-                numberCell.style.backgroundColor = '#6c757d';
-                numberCell.querySelector('.number-text').style.textShadow = 'none';
-            };
             
-            // Crear elemento de texto para el número
+            // Crear elemento de texto para el número (siempre visible)
             const numberText = document.createElement('div');
-            numberText.className = 'number-text';
+            numberText.className = 'number-text visible';
             numberText.textContent = i;
             
             numberCell.appendChild(img);
             numberCell.appendChild(numberText);
+            
+            // Cargar imagen según el formato seleccionado
+            loadImageForCell(img, numberText, numberCell, i);
             
             numberCell.addEventListener('click', function() {
                 toggleNumberSelection(i);
@@ -65,6 +67,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             numberGrid.appendChild(numberCell);
         }
+    }
+    
+    function loadImageForCell(imgElement, textElement, cellElement, number) {
+        imgElement.src = `${number}.${currentImageFormat}`;
+        
+        imgElement.onload = function() {
+            this.style.display = 'block';
+            // El texto siempre permanece visible encima de la imagen
+            textElement.style.display = 'block';
+            cellElement.style.backgroundColor = '';
+        };
+        
+        imgElement.onerror = function() {
+            // Intentar cargar el otro formato si falla
+            const fallbackFormat = currentImageFormat === 'webp' ? 'jpg' : 'webp';
+            this.src = `${number}.${fallbackFormat}`;
+            
+            this.onerror = function() {
+                // Si ambos formatos fallan, mostrar solo el número
+                this.style.display = 'none';
+                textElement.style.display = 'block';
+                cellElement.style.backgroundColor = '#6c757d';
+            };
+        };
     }
     
     function toggleNumberSelection(number) {
@@ -248,11 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             previewContainer.innerHTML = '';
             
-            // Generar todos los canvases
             const canvasPromises = bingoCards.map((card, i) => createCardImage(card, i + 1));
             const canvases = await Promise.all(canvasPromises);
             
-            // Añadir los canvases al DOM
             canvases.forEach((canvas) => {
                 const previewCard = document.createElement('div');
                 previewCard.className = 'preview-card';
@@ -260,7 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 previewContainer.appendChild(previewCard);
             });
             
-            // Mostrar la sección de previsualización
             cardGenerationSection.classList.remove('active-step');
             cardGenerationSection.classList.add('hidden-step');
             imagePreviewSection.classList.remove('hidden-step');
@@ -273,16 +296,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-   async function createCardImage(cardNumbers, cardIndex) {
+async function createCardImage(cardNumbers, cardIndex) {
     return new Promise(async (resolve, reject) => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Tamaño del canvas
         const cellSize = 150;
         const padding = 20;
-        const width = 5 * cellSize + 2 * padding;
-        const height = 5 * cellSize + 2 * padding;
+        const margin = 40;
+        const width = 5 * cellSize + 2 * padding + 2 * margin;
+        const height = 5 * cellSize + 2 * padding + 2 * margin;
         
         canvas.width = width;
         canvas.height = height;
@@ -291,21 +314,34 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, width, height);
         
+        // Dibujar marco punteado para corte
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(margin/2, margin/2, width - margin, height - margin);
+        ctx.setLineDash([]);
+        
         // Dibujar las celdas
         for (let row = 0; row < 5; row++) {
             for (let col = 0; col < 5; col++) {
                 const number = cardNumbers[row][col];
-                const x = padding + col * cellSize;
-                const y = padding + row * cellSize;
+                const x = margin + padding + col * cellSize;
+                const y = margin + padding + row * cellSize;
                 
-                // Dibujar el borde de la celda
+                // Dibujar el borde de la celda (color diferente para seleccionados)
                 ctx.strokeStyle = selectedNumbers.includes(number) ? '#ca6702' : '#0a9396';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(x, y, cellSize, cellSize);
                 
                 try {
-                    // Intentar cargar la imagen WEBP
-                    const img = await loadImage(`${number}.webp`);
+                    // Intentar cargar la imagen según el formato seleccionado
+                    let img;
+                    try {
+                        img = await loadImage(`${number}.${currentImageFormat}`);
+                    } catch (e) {
+                        const fallbackFormat = currentImageFormat === 'webp' ? 'jpg' : 'webp';
+                        img = await loadImage(`${number}.${fallbackFormat}`);
+                    }
                     
                     // Dibujar la imagen en la celda (SIEMPRE A COLOR)
                     const imgPadding = 5;
@@ -319,7 +355,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                 } catch (error) {
                     console.error(`Error cargando imagen para número ${number}:`, error);
-                    // Si falla, dibujar solo el número
+                    // Si falla, dibujar solo el número con fondo semitransparente
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
+                    
                     ctx.fillStyle = selectedNumbers.includes(number) ? '#ca6702' : '#005f73';
                     ctx.font = 'bold 36px Arial';
                     ctx.textAlign = 'center';
@@ -327,28 +366,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     ctx.fillText(number, x + cellSize/2, y + cellSize/2);
                 }
                 
-                // Dibujar el número en la esquina superior izquierda
-                ctx.fillStyle = selectedNumbers.includes(number) ? '#FFD700' : 'rgba(255, 255, 255, 0.7)';
-                ctx.font = 'bold 20px Arial';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'middle';
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                ctx.shadowBlur = 3;
-                ctx.shadowOffsetX = 1;
-                ctx.shadowOffsetY = 1;
-                ctx.fillText(number, x + 10, y + 25);
-                ctx.shadowColor = 'transparent';
+                // Solo mostrar número pequeño si es diseño moderno (webp)
+                if (currentImageFormat === 'webp') {
+                    // Fondo semitransparente para el número
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(x + 5, y + 15, 40, 30);
+                    
+                    // Texto del número
+                    ctx.fillStyle = selectedNumbers.includes(number) ? '#FFD700' : 'white';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                    ctx.shadowBlur = 3;
+                    ctx.shadowOffsetX = 1;
+                    ctx.shadowOffsetY = 1;
+                    ctx.fillText(number, x + 10, y + 30);
+                    ctx.shadowColor = 'transparent';
+                }
             }
         }
         
-        // Agregar marca de agua
+        // Agregar marca de agua dentro del área de corte
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.font = 'italic 14px Arial';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('Generado por E. Sanchez', 10, height - 10);
+        ctx.fillText('Generado por E. Sanchez', margin + 10, height - margin - 3);
         
-        // Esperar un breve momento para asegurar que todo se haya renderizado
         setTimeout(() => {
             resolve(canvas);
         }, 100);
