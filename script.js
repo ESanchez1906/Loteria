@@ -38,8 +38,26 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= 90; i++) {
             const numberCell = document.createElement('div');
             numberCell.className = 'number-cell';
-            numberCell.textContent = i;
             numberCell.dataset.number = i;
+            
+            // Crear elemento de imagen
+            const img = document.createElement('img');
+            img.src = `${i}.webp`;
+            img.alt = `Número ${i}`;
+            img.onerror = function() {
+                // Si la imagen falla al cargar, mostrar un fondo de color
+                this.style.display = 'none';
+                numberCell.style.backgroundColor = '#6c757d';
+                numberCell.querySelector('.number-text').style.textShadow = 'none';
+            };
+            
+            // Crear elemento de texto para el número
+            const numberText = document.createElement('div');
+            numberText.className = 'number-text';
+            numberText.textContent = i;
+            
+            numberCell.appendChild(img);
+            numberCell.appendChild(numberText);
             
             numberCell.addEventListener('click', function() {
                 toggleNumberSelection(i);
@@ -255,86 +273,87 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    async function createCardImage(cardNumbers, cardIndex) {
-        return new Promise(async (resolve, reject) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Tamaño del canvas
-            const cellSize = 150;
-            const padding = 20;
-            const width = 5 * cellSize + 2 * padding;
-            const height = 5 * cellSize + 2 * padding;
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // Fondo blanco
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, width, height);
-            
-            // Dibujar las celdas
-            for (let row = 0; row < 5; row++) {
-                for (let col = 0; col < 5; col++) {
-                    const number = cardNumbers[row][col];
-                    const x = padding + col * cellSize;
-                    const y = padding + row * cellSize;
+   async function createCardImage(cardNumbers, cardIndex) {
+    return new Promise(async (resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Tamaño del canvas
+        const cellSize = 150;
+        const padding = 20;
+        const width = 5 * cellSize + 2 * padding;
+        const height = 5 * cellSize + 2 * padding;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Fondo blanco
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Dibujar las celdas
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                const number = cardNumbers[row][col];
+                const x = padding + col * cellSize;
+                const y = padding + row * cellSize;
+                
+                // Dibujar el borde de la celda
+                ctx.strokeStyle = selectedNumbers.includes(number) ? '#ca6702' : '#0a9396';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, cellSize, cellSize);
+                
+                try {
+                    // Intentar cargar la imagen WEBP
+                    const img = await loadImage(`${number}.webp`);
                     
-                    // Dibujar el borde de la celda
-                    ctx.strokeStyle = selectedNumbers.includes(number) ? '#ca6702' : '#0a9396';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x, y, cellSize, cellSize);
+                    // Dibujar la imagen en la celda (SIEMPRE A COLOR)
+                    const imgPadding = 5;
+                    ctx.drawImage(
+                        img, 
+                        x + imgPadding, 
+                        y + imgPadding, 
+                        cellSize - 2 * imgPadding, 
+                        cellSize - 2 * imgPadding
+                    );
                     
-                    try {
-                        // Intentar cargar la imagen WEBP
-                        const img = await loadImage(`${number}.webp`);
-                        
-                        // Dibujar la imagen en la celda
-                        const imgPadding = 5;
-                        ctx.drawImage(
-                            img, 
-                            x + imgPadding, 
-                            y + imgPadding, 
-                            cellSize - 2 * imgPadding, 
-                            cellSize - 2 * imgPadding
-                        );
-                    } catch (error) {
-                        console.error(`Error cargando imagen para número ${number}:`, error);
-                        // Si falla, dibujar solo el número
-                        ctx.fillStyle = selectedNumbers.includes(number) ? '#ca6702' : '#005f73';
-                        ctx.font = 'bold 36px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(number, x + cellSize/2, y + cellSize/2);
-                    }
-                    
-                    // Dibujar el número en la esquina superior izquierda
-                    ctx.fillStyle = selectedNumbers.includes(number) ? '#FFD700' : 'white';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.textAlign = 'left';
+                } catch (error) {
+                    console.error(`Error cargando imagen para número ${number}:`, error);
+                    // Si falla, dibujar solo el número
+                    ctx.fillStyle = selectedNumbers.includes(number) ? '#ca6702' : '#005f73';
+                    ctx.font = 'bold 36px Arial';
+                    ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                    ctx.shadowBlur = 3;
-                    ctx.shadowOffsetX = 1;
-                    ctx.shadowOffsetY = 1;
-                    ctx.fillText(number, x + 10, y + 25);
-                    ctx.shadowColor = 'transparent';
+                    ctx.fillText(number, x + cellSize/2, y + cellSize/2);
                 }
+                
+                // Dibujar el número en la esquina superior izquierda
+                ctx.fillStyle = selectedNumbers.includes(number) ? '#FFD700' : 'rgba(255, 255, 255, 0.7)';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 3;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+                ctx.fillText(number, x + 10, y + 25);
+                ctx.shadowColor = 'transparent';
             }
-            
-            // Agregar marca de agua
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.font = 'italic 14px Arial';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText('Generado por E. Sanchez', 10, height - 10);
-            
-            // Esperar un breve momento para asegurar que todo se haya renderizado
-            setTimeout(() => {
-                resolve(canvas);
-            }, 100);
-        });
-    }
+        }
+        
+        // Agregar marca de agua
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.font = 'italic 14px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Generado por E. Sanchez', 10, height - 10);
+        
+        // Esperar un breve momento para asegurar que todo se haya renderizado
+        setTimeout(() => {
+            resolve(canvas);
+        }, 100);
+    });
+}
     
     function loadImage(src) {
         return new Promise((resolve, reject) => {
