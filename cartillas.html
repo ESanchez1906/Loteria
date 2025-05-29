@@ -63,6 +63,26 @@
             color: var(--dark-gray);
         }
 
+        .design-selector {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .design-selector label {
+            margin-right: 10px;
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        .design-selector select {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 2px solid var(--medium-gray);
+            background-color: var(--white);
+            font-size: 16px;
+            cursor: pointer;
+        }
+
         #app-flow {
             flex-grow: 1;
             position: relative;
@@ -172,27 +192,37 @@
             position: absolute;
             top: 0;
             left: 0;
-            filter: grayscale(100%) brightness(0.7);
+            filter: grayscale(100%) brightness(0.8);
             transition: filter 0.3s ease;
+        }
+
+        .number-text.visible {
+            position: absolute;
+            z-index: 2;
+            top: 5px;
+            left: 5px;
+            /* background-color: rgba(0, 0, 0, 0.7); */
+            color: white;
+            width: 24px;
+            height: 24px;
+            /* border-radius: 50%; */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: none;
+        }
+
+        .number-cell.selected .number-text.visible {
+            /* background-color: rgba(202, 103, 2, 0.9); */
+            color: #FFD700;
+            /* box-shadow: 0 0 5px rgba(255, 215, 0, 0.7); */
         }
 
         .number-cell.selected img {
             filter: grayscale(0%) brightness(1);
-        }
-
-        .number-cell .number-text {
-            position: relative;
-            z-index: 1;
-            color: white;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-            font-size: 24px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .number-cell.selected .number-text {
-            color: #FFD700;
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+            box-shadow: 0 0 10px rgba(202, 103, 2, 0.7);
         }
 
         .number-cell:hover {
@@ -367,6 +397,13 @@
         <header>
             <h1>Loteria Campechana</h1>
             <p>Crea tus cartillas personalizadas con los repetidos que elijas</p>
+            <div class="design-selector">
+                <label for="design-style">Estilo de imágenes:</label>
+                <select id="design-style">
+                    <option value="webp">Moderno</option>
+                    <option value="jpg">Tradicional</option>
+                </select>
+            </div>
         </header>
 
         <div id="app-flow">
