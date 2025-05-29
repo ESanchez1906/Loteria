@@ -70,19 +70,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadImageForCell(imgElement, textElement, cellElement, number) {
-        imgElement.src = `${number}.${currentImageFormat}`;
+        let imagePath;
+        
+        if (currentImageFormat === 'jpgA') {
+            imagePath = `${number}A.jpg`; // Para el nuevo estilo alternativo
+        } else {
+            imagePath = `${number}.${currentImageFormat}`; // Para los formatos normales
+        }
+        
+        imgElement.src = imagePath;
         
         imgElement.onload = function() {
             this.style.display = 'block';
-            // El texto siempre permanece visible encima de la imagen
             textElement.style.display = 'block';
             cellElement.style.backgroundColor = '';
         };
         
         imgElement.onerror = function() {
-            // Intentar cargar el otro formato si falla
-            const fallbackFormat = currentImageFormat === 'webp' ? 'jpg' : 'webp';
-            this.src = `${number}.${fallbackFormat}`;
+            // Intentar cargar el formato tradicional si falla
+            if (currentImageFormat === 'jpgA') {
+                this.src = `${number}.jpg`;
+            } else {
+                const fallbackFormat = currentImageFormat === 'webp' ? 'jpg' : 'webp';
+                this.src = `${number}.${fallbackFormat}`;
+            }
             
             this.onerror = function() {
                 // Si ambos formatos fallan, mostrar solo el número
@@ -296,109 +307,113 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-async function createCardImage(cardNumbers, cardIndex) {
-    return new Promise(async (resolve, reject) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        const cellSize = 150;
-        const padding = 20;
-        const margin = 40;
-        const width = 5 * cellSize + 2 * padding + 2 * margin;
-        const height = 5 * cellSize + 2 * padding + 2 * margin;
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Fondo blanco
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, width, height);
-        
-        // Dibujar marco punteado para corte
-        ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = '#999';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(margin/2, margin/2, width - margin, height - margin);
-        ctx.setLineDash([]);
-        
-        // Dibujar las celdas
-        for (let row = 0; row < 5; row++) {
-            for (let col = 0; col < 5; col++) {
-                const number = cardNumbers[row][col];
-                const x = margin + padding + col * cellSize;
-                const y = margin + padding + row * cellSize;
-                
-                // Dibujar el borde de la celda (color diferente para seleccionados)
-                ctx.strokeStyle = selectedNumbers.includes(number) ? '#ca6702' : '#0a9396';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, cellSize, cellSize);
-                
-                try {
-                    // Intentar cargar la imagen según el formato seleccionado
-                    let img;
+    async function createCardImage(cardNumbers, cardIndex) {
+        return new Promise(async (resolve, reject) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const cellSize = 150;
+            const padding = 20;
+            const margin = 40;
+            const width = 5 * cellSize + 2 * padding + 2 * margin;
+            const height = 5 * cellSize + 2 * padding + 2 * margin;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Fondo blanco
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Dibujar marco punteado para corte
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(margin/2, margin/2, width - margin, height - margin);
+            ctx.setLineDash([]);
+            
+            // Dibujar las celdas
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const number = cardNumbers[row][col];
+                    const x = margin + padding + col * cellSize;
+                    const y = margin + padding + row * cellSize;
+                    
+                    // Dibujar el borde de la celda (color diferente para seleccionados)
+                    ctx.strokeStyle = selectedNumbers.includes(number) ? '#ca6702' : '#0a9396';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                    
                     try {
-                        img = await loadImage(`${number}.${currentImageFormat}`);
-                    } catch (e) {
-                        const fallbackFormat = currentImageFormat === 'webp' ? 'jpg' : 'webp';
-                        img = await loadImage(`${number}.${fallbackFormat}`);
+                        // Intentar cargar la imagen según el formato seleccionado
+                        let img;
+                        try {
+                            if (currentImageFormat === 'jpgA') {
+                                img = await loadImage(`${number}A.jpg`);
+                            } else {
+                                img = await loadImage(`${number}.${currentImageFormat}`);
+                            }
+                        } catch (e) {
+                            // Intentar con el formato tradicional como fallback
+                            img = await loadImage(`${number}.jpg`);
+                        }
+                        
+                        // Dibujar la imagen en la celda (SIEMPRE A COLOR)
+                        const imgPadding = 5;
+                        ctx.drawImage(
+                            img, 
+                            x + imgPadding, 
+                            y + imgPadding, 
+                            cellSize - 2 * imgPadding, 
+                            cellSize - 2 * imgPadding
+                        );
+                        
+                    } catch (error) {
+                        console.error(`Error cargando imagen para número ${number}:`, error);
+                        // Si falla, dibujar solo el número con fondo semitransparente
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
+                        
+                        ctx.fillStyle = selectedNumbers.includes(number) ? '#ca6702' : '#005f73';
+                        ctx.font = 'bold 36px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(number, x + cellSize/2, y + cellSize/2);
                     }
                     
-                    // Dibujar la imagen en la celda (SIEMPRE A COLOR)
-                    const imgPadding = 5;
-                    ctx.drawImage(
-                        img, 
-                        x + imgPadding, 
-                        y + imgPadding, 
-                        cellSize - 2 * imgPadding, 
-                        cellSize - 2 * imgPadding
-                    );
-                    
-                } catch (error) {
-                    console.error(`Error cargando imagen para número ${number}:`, error);
-                    // Si falla, dibujar solo el número con fondo semitransparente
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
-                    
-                    ctx.fillStyle = selectedNumbers.includes(number) ? '#ca6702' : '#005f73';
-                    ctx.font = 'bold 36px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(number, x + cellSize/2, y + cellSize/2);
-                }
-                
-                // Solo mostrar número pequeño si es diseño moderno (webp)
-                if (currentImageFormat === 'webp') {
-                    // Fondo semitransparente para el número
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.fillRect(x + 5, y + 15, 40, 30);
-                    
-                    // Texto del número
-                    ctx.fillStyle = selectedNumbers.includes(number) ? '#FFD700' : 'white';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.textAlign = 'left';
-                    ctx.textBaseline = 'middle';
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                    ctx.shadowBlur = 3;
-                    ctx.shadowOffsetX = 1;
-                    ctx.shadowOffsetY = 1;
-                    ctx.fillText(number, x + 10, y + 30);
-                    ctx.shadowColor = 'transparent';
+                    // Solo mostrar número pequeño si es diseño moderno (webp)
+                    if (currentImageFormat === 'webp') {
+                        // Fondo semitransparente para el número
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                        ctx.fillRect(x + 5, y + 15, 40, 30);
+                        
+                        // Texto del número
+                        ctx.fillStyle = selectedNumbers.includes(number) ? '#FFD700' : 'white';
+                        ctx.font = 'bold 20px Arial';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                        ctx.shadowBlur = 3;
+                        ctx.shadowOffsetX = 1;
+                        ctx.shadowOffsetY = 1;
+                        ctx.fillText(number, x + 10, y + 30);
+                        ctx.shadowColor = 'transparent';
+                    }
                 }
             }
-        }
-        
-        // Agregar marca de agua dentro del área de corte
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.font = 'italic 14px Arial';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText('Generado por E. Sanchez', margin + 10, height - margin - 3);
-        
-        setTimeout(() => {
-            resolve(canvas);
-        }, 100);
-    });
-}
+            
+            // Agregar marca de agua dentro del área de corte
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.font = 'italic 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Generado por E. Sanchez', margin + 10, height - margin - 3);
+            
+            setTimeout(() => {
+                resolve(canvas);
+            }, 100);
+        });
+    }
     
     function loadImage(src) {
         return new Promise((resolve, reject) => {
