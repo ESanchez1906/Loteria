@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Elementos del DOM - Reorganizado con controles principales primero
+    // Elementos del DOM
     const designSelector = document.getElementById('design-style');
     const autoModeBtn = document.getElementById('auto-mode');
     const manualModeBtn = document.getElementById('manual-mode');
@@ -27,6 +27,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const repeatedCount = document.getElementById('repeated-count');
     const remainingCount = document.getElementById('remaining-count');
     
+    // Elementos del modal
+    const modal = document.getElementById('card-modal');
+    const modalCanvas = document.getElementById('modal-card-canvas');
+    const modalCardNumber = document.getElementById('modal-card-number');
+    const prevCardBtn = document.getElementById('prev-card');
+    const nextCardBtn = document.getElementById('next-card');
+    const closeModalBtn = document.querySelector('.close-modal');
+    const openPlayPageBtn = document.getElementById('open-play-page');
+    
     // Secciones del flujo
     const numberSelectionSection = document.getElementById('number-selection');
     const cardGenerationSection = document.getElementById('card-generation');
@@ -43,28 +52,47 @@ document.addEventListener('DOMContentLoaded', function() {
     let repeatedNumbersCount = 0;
     const MAX_REPEATED = 10;
     
+    // Estado del modal
+    let currentModalCardIndex = 0;
+    
     // Inicializar la aplicación
-    setupModeButtons();
-    resetBtn.addEventListener('click', resetApp);
-    resetCurrentCardBtn.addEventListener('click', resetCurrentCard);
-    
-    // Event listeners
-    confirmSelectionBtn.addEventListener('click', generateBingoCards);
-    autoConfirmSelectionBtn.addEventListener('click', generateBingoCards);
-    regenerateCardsBtn.addEventListener('click', regenerateBingoCards);
-    changeNumbersBtn.addEventListener('click', goBackToNumberSelection);
-    generateImagesBtn.addEventListener('click', generateCardImages);
-    backToCardsBtn.addEventListener('click', goBackToCardGeneration);
-    designSelector.addEventListener('change', function() {
-        currentImageFormat = this.value;
+    initApp();
+
+    function initApp() {
+        setupModeButtons();
+        resetBtn.addEventListener('click', resetApp);
+        resetCurrentCardBtn.addEventListener('click', resetCurrentCard);
+        
+        // Event listeners para el modal
+        closeModalBtn.addEventListener('click', closeModal);
+        prevCardBtn.addEventListener('click', showPrevCard);
+        nextCardBtn.addEventListener('click', showNextCard);
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Event listeners principales
+        confirmSelectionBtn.addEventListener('click', generateBingoCards);
+        autoConfirmSelectionBtn.addEventListener('click', generateBingoCards);
+        regenerateCardsBtn.addEventListener('click', regenerateBingoCards);
+        changeNumbersBtn.addEventListener('click', goBackToNumberSelection);
+        generateImagesBtn.addEventListener('click', generateCardImages);
+        backToCardsBtn.addEventListener('click', goBackToCardGeneration);
+        designSelector.addEventListener('change', function() {
+            currentImageFormat = this.value;
+            initNumberGrids();
+        });
+        fillRandomBtn.addEventListener('click', fillEmptyCellsRandomly);
+        openPlayPageBtn.addEventListener('click', openPlayPage);
+
         initNumberGrids();
-    });
-    fillRandomBtn.addEventListener('click', fillEmptyCellsRandomly);
-    
+    }
+
     function resetCurrentCard() {
         const currentCard = manualCardsNumbers[currentManualCard];
         
-        // Eliminar números de la cartilla actual del conteo
         for (let row = 0; row < 5; row++) {
             for (let col = 0; col < 5; col++) {
                 const num = currentCard[row][col];
@@ -90,15 +118,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function resetApp() {
-        // Resetear estado
         selectedNumbers = [];
         bingoCards = [];
         currentManualCard = 0;
         manualCardsNumbers = Array(4).fill().map(() => Array(5).fill().map(() => Array(5).fill(null)));
         usedNumbers = new Map();
         repeatedNumbersCount = 0;
+        currentModalCardIndex = 0;
         
-        // Resetear UI
         manualLayout.style.display = 'none';
         autoSelection.style.display = 'block';
         numberSelectionSection.classList.remove('hidden-step');
@@ -108,12 +135,10 @@ document.addEventListener('DOMContentLoaded', function() {
         imagePreviewSection.classList.remove('active-step');
         imagePreviewSection.classList.add('hidden-step');
         
-        // Resetear selección de modo
         isManualMode = false;
         autoModeBtn.classList.add('active');
         manualModeBtn.classList.remove('active');
         
-        // Actualizar UI
         updateUIForCurrentMode();
         initNumberGrids();
     }
@@ -151,11 +176,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initNumberGrids() {
-        // Limpiar grids
         numberGrid.innerHTML = '';
         autoNumberGrid.innerHTML = '';
         
-        // Crear celdas para el grid manual (solo números)
+        // Grid manual (solo números)
         for (let i = 1; i <= 90; i++) {
             const numberCell = document.createElement('div');
             numberCell.className = 'number-cell';
@@ -171,18 +195,16 @@ document.addEventListener('DOMContentLoaded', function() {
             numberGrid.appendChild(numberCell);
         }
         
-        // Crear celdas para el grid automático (con imágenes)
+        // Grid automático (con imágenes)
         if (!isManualMode) {
             for (let i = 1; i <= 90; i++) {
                 const numberCell = document.createElement('div');
                 numberCell.className = 'number-cell';
                 numberCell.dataset.number = i;
                 
-                // Crear elemento de imagen
                 const img = document.createElement('img');
                 img.alt = `Número ${i}`;
                 
-                // Crear elemento de texto para el número (siempre visible)
                 const numberText = document.createElement('div');
                 numberText.className = 'number-text visible';
                 numberText.textContent = i;
@@ -190,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 numberCell.appendChild(img);
                 numberCell.appendChild(numberText);
                 
-                // Cargar imagen según el formato seleccionado
                 loadImageForCell(img, numberText, numberCell, i);
                 
                 numberCell.addEventListener('click', function() {
@@ -211,14 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadImageForCell(imgElement, textElement, cellElement, number) {
-        let imagePath;
-        
-        if (currentImageFormat === 'jpgA') {
-            imagePath = `${number}A.jpg`;
-        } else {
-            imagePath = `${number}.${currentImageFormat}`;
-        }
-        
+        let imagePath = currentImageFormat === 'jpgA' ? `${number}A.jpg` : `${number}.${currentImageFormat}`;
         imgElement.src = imagePath;
         
         imgElement.onload = function() {
@@ -355,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             usedNumbers.set(number, currentCount + 1);
                             repeatedNumbersCount++;
                         } else {
-                            alert(`Ya has alcanzado el máximo de ${MAX_REPEATED} números repetidos.`);
+                            showCustomAlert(`Ya has alcanzado el máximo de ${MAX_REPEATED} números repetidos.`);
                             return;
                         }
                     } else {
@@ -368,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (!emptyCellFound) {
-            alert('Esta cartilla ya está completa. Haz clic en un número existente para reemplazarlo.');
+            showCustomAlert('Esta cartilla ya está completa. Haz clic en un número existente para reemplazarlo.');
             return;
         }
         
@@ -383,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const emptyCells = [];
         const availableNumbers = [];
         
-        // Encontrar celdas vacías
         for (let row = 0; row < 5; row++) {
             for (let col = 0; col < 5; col++) {
                 if (currentCard[row][col] === null) {
@@ -393,20 +406,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (emptyCells.length === 0) {
-            alert('Esta cartilla ya está completa.');
+            showCustomAlert('Esta cartilla ya está completa.');
             return;
         }
         
-        // Calcular números disponibles considerando las reglas de repetición
         const remainingRepeats = MAX_REPEATED - repeatedNumbersCount;
         const canAddMoreRepeats = remainingRepeats > 0;
         
         for (let num = 1; num <= 90; num++) {
             const count = usedNumbers.get(num) || 0;
             
-            // Puede usar el número si:
-            // 1. No se ha usado antes (count === 0)
-            // 2. Se ha usado una vez y aún podemos añadir repeticiones (count === 1 && canAddMoreRepeats)
             if (count === 0 || (count === 1 && canAddMoreRepeats)) {
                 availableNumbers.push({
                     number: num,
@@ -415,10 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Mezclar los números disponibles
         shuffleArray(availableNumbers);
         
-        // Primero intentar llenar con números no repetidos
         const nonRepeatedNumbers = availableNumbers.filter(item => !item.canRepeat);
         for (const cell of emptyCells) {
             if (nonRepeatedNumbers.length > 0) {
@@ -428,7 +435,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Luego llenar con posibles repeticiones si es necesario
         const remainingEmptyCells = emptyCells.filter(cell => currentCard[cell.row][cell.col] === null);
         const repeatedNumbers = availableNumbers.filter(item => item.canRepeat);
         
@@ -439,8 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 usedNumbers.set(numObj.number, 2);
                 repeatedNumbersCount++;
             } else {
-                // Si no hay más números disponibles que cumplan las reglas
-                alert('No hay números disponibles que cumplan las reglas de repetición.');
+                showCustomAlert('No hay números disponibles que cumplan las reglas de repetición.');
                 break;
             }
         }
@@ -510,7 +515,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function generateBingoCards() {
         if (isManualMode) {
-            // Validar que todas las cartillas estén completas
             for (let i = 0; i < 4; i++) {
                 if (!isManualCardComplete(i)) {
                     const confirmFill = confirm(`La cartilla ${i + 1} no está completa. ¿Deseas rellenar los espacios vacíos automáticamente?`);
@@ -524,14 +528,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Validación estricta de números repetidos
             if (repeatedNumbersCount !== MAX_REPEATED) {
                 const remaining = MAX_REPEATED - repeatedNumbersCount;
                 const confirmAdjust = confirm(`Debes tener exactamente ${MAX_REPEATED} números repetidos. Actualmente tienes ${repeatedNumbersCount} (faltan ${remaining}). ¿Deseas que ajustemos automáticamente?`);
                 
                 if (confirmAdjust) {
                     if (!adjustRepeatedNumbersStrict()) {
-                        alert('No se pudo ajustar automáticamente. Por favor ajusta manualmente los números repetidos.');
+                        showCustomAlert('No se pudo ajustar automáticamente. Por favor ajusta manualmente los números repetidos.');
                         return;
                     }
                 } else {
@@ -539,7 +542,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Validar que todos los números del 1 al 90 estén presentes
             const allNumbersPresent = validateAllNumbersPresent();
             if (!allNumbersPresent.missing.length) {
                 bingoCards = manualCardsNumbers.map(card => {
@@ -550,16 +552,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     return formattedCard;
                 });
             } else {
-                alert(`Faltan los siguientes números: ${allNumbersPresent.missing.join(', ')}. Por favor inclúyelos en tus cartillas.`);
+                showCustomAlert(`Faltan los siguientes números: ${allNumbersPresent.missing.join(', ')}. Por favor inclúyelos en tus cartillas.`);
                 return;
             }
         } else {
             if (selectedNumbers.length !== 10) {
-                alert('Por favor selecciona exactamente 10 números.');
+                showCustomAlert('Por favor selecciona exactamente 10 números.');
                 return;
             }
             
-            bingoCards = generateCardsWithDuplicates(selectedNumbers);
+            try {
+                bingoCards = generateCardsWithDuplicates(selectedNumbers);
+            } catch (e) {
+                showCustomAlert('Error al generar las cartillas: ' + e.message);
+                return;
+            }
         }
         
         displayBingoCards();
@@ -570,6 +577,118 @@ document.addEventListener('DOMContentLoaded', function() {
         cardGenerationSection.classList.add('active-step');
     }
     
+    function generateCardsWithDuplicates(selectedNums) {
+        if (selectedNums.length !== 10) {
+            throw new Error('Deben seleccionarse exactamente 10 números');
+        }
+
+        const MAX_ATTEMPTS = 1000;
+        let attempts = 0;
+        let success = false;
+        let cards = [];
+
+        while (!success && attempts < MAX_ATTEMPTS) {
+            attempts++;
+            try {
+                cards = attemptGenerateCardsWithRandomDistribution(selectedNums);
+                success = validateCards(cards, selectedNums);
+            } catch (e) {
+                continue;
+            }
+        }
+
+        if (!success) {
+            throw new Error(`No se pudo generar las cartillas después de ${MAX_ATTEMPTS} intentos. Intenta con diferentes números.`);
+        }
+
+        return cards;
+    }
+
+    function attemptGenerateCardsWithRandomDistribution(selectedNums) {
+        const duplicatedSelected = [...selectedNums, ...selectedNums];
+        const otherNumbers = Array.from({length: 90}, (_, i) => i + 1)
+            .filter(num => !selectedNums.includes(num));
+        
+        shuffleArray(duplicatedSelected);
+        shuffleArray(otherNumbers);
+
+        const cards = [];
+        const selectedUsage = new Map(selectedNums.map(num => [num, 0]));
+
+        for (let i = 0; i < 4; i++) {
+            const cardNumbers = [];
+            const usedInCard = new Set();
+
+            let selectedInCard = 0;
+            while (selectedInCard < 5) {
+                const availableSelected = duplicatedSelected.filter(num => 
+                    selectedUsage.get(num) < 2 && !usedInCard.has(num)
+                );
+
+                if (availableSelected.length === 0) {
+                    throw new Error('No hay números seleccionados disponibles');
+                }
+
+                const randomIndex = Math.floor(Math.random() * availableSelected.length);
+                const num = availableSelected[randomIndex];
+
+                const insertPos = Math.floor(Math.random() * (cardNumbers.length + 1));
+                cardNumbers.splice(insertPos, 0, num);
+                
+                usedInCard.add(num);
+                selectedUsage.set(num, selectedUsage.get(num) + 1);
+                selectedInCard++;
+            }
+            
+            const remainingNumbers = otherNumbers.filter(num => !usedInCard.has(num));
+            shuffleArray(remainingNumbers);
+            
+            for (const num of remainingNumbers.slice(0, 20)) {
+                const insertPos = Math.floor(Math.random() * (cardNumbers.length + 1));
+                cardNumbers.splice(insertPos, 0, num);
+                usedInCard.add(num);
+            }
+            
+            const card = [];
+            for (let row = 0; row < 5; row++) {
+                card.push(cardNumbers.slice(row * 5, (row + 1) * 5));
+            }
+            
+            cards.push(card);
+        }
+
+        return cards;
+    }
+
+    function validateCards(cards, selectedNums) {
+        const countMap = new Map(selectedNums.map(num => [num, 0]));
+        
+        cards.forEach(card => {
+            card.forEach(row => {
+                row.forEach(num => {
+                    if (selectedNums.includes(num)) {
+                        countMap.set(num, countMap.get(num) + 1);
+                    }
+                });
+            });
+        });
+        
+        for (const [num, count] of countMap) {
+            if (count !== 2) {
+                return false;
+            }
+        }
+        
+        for (const card of cards) {
+            const uniqueNumbers = new Set(card.flat());
+            if (uniqueNumbers.size !== 25) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
     function validateAllNumbersPresent() {
         const presentNumbers = new Set();
         const missingNumbers = [];
@@ -598,7 +717,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const needed = MAX_REPEATED - repeatedNumbersCount;
         
         if (needed > 0) {
-            // Necesitamos añadir repeticiones
             const singleUseNumbers = [];
             
             usedNumbers.forEach((count, num) => {
@@ -613,7 +731,6 @@ document.addEventListener('DOMContentLoaded', function() {
             for (const num of singleUseNumbers) {
                 if (added >= needed) break;
                 
-                // Buscar una cartilla con espacio para añadir este número
                 for (let cardIdx = 0; cardIdx < 4; cardIdx++) {
                     let addedInThisCard = false;
                     
@@ -635,7 +752,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             return added === needed;
         } else if (needed < 0) {
-            // Necesitamos quitar repeticiones
             const repeatedNums = [];
             
             usedNumbers.forEach((count, num) => {
@@ -650,7 +766,6 @@ document.addEventListener('DOMContentLoaded', function() {
             for (const num of repeatedNums) {
                 if (removed >= -needed) break;
                 
-                // Buscar una ocurrencia de este número para eliminarla
                 for (let cardIdx = 0; cardIdx < 4; cardIdx++) {
                     let removedInThisCard = false;
                     
@@ -673,94 +788,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return removed === -needed;
         }
         
-        return true; // No se necesitaban ajustes
-    }
-    
-    function adjustRepeatedNumbers() {
-        const needed = MAX_REPEATED - repeatedNumbersCount;
-        
-        if (needed > 0) {
-            const candidates = [];
-            
-            usedNumbers.forEach((count, num) => {
-                if (count === 1) {
-                    candidates.push(num);
-                }
-            });
-            
-            shuffleArray(candidates);
-            
-            for (let i = 0; i < Math.min(needed, candidates.length); i++) {
-                const num = candidates[i];
-                
-                for (let cardIdx = 0; cardIdx < 4; cardIdx++) {
-                    for (let row = 0; row < 5; row++) {
-                        for (let col = 0; col < 5; col++) {
-                            if (manualCardsNumbers[cardIdx][row][col] === num) {
-                                for (let otherCardIdx = 0; otherCardIdx < 4; otherCardIdx++) {
-                                    if (otherCardIdx === cardIdx) continue;
-                                    
-                                    for (let otherRow = 0; otherRow < 5; otherRow++) {
-                                        for (let otherCol = 0; otherCol < 5; otherCol++) {
-                                            if (manualCardsNumbers[otherCardIdx][otherRow][otherCol] === null) {
-                                                manualCardsNumbers[otherCardIdx][otherRow][otherCol] = num;
-                                                usedNumbers.set(num, 2);
-                                                repeatedNumbersCount++;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        } else if (needed < 0) {
-            const repeated = [];
-            
-            usedNumbers.forEach((count, num) => {
-                if (count > 1) {
-                    repeated.push(num);
-                }
-            });
-            
-            shuffleArray(repeated);
-            
-            for (let i = 0; i < Math.min(-needed, repeated.length); i++) {
-                const num = repeated[i];
-                let found = false;
-                
-                for (let cardIdx = 0; cardIdx < 4 && !found; cardIdx++) {
-                    for (let row = 0; row < 5 && !found; row++) {
-                        for (let col = 0; col < 5 && !found; col++) {
-                            if (manualCardsNumbers[cardIdx][row][col] === num) {
-                                manualCardsNumbers[cardIdx][row][col] = null;
-                                const newCount = usedNumbers.get(num) - 1;
-                                usedNumbers.set(num, newCount);
-                                if (newCount === 1) {
-                                    repeatedNumbersCount--;
-                                }
-                                found = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        updateCurrentCardGrid();
-        updateUIForCurrentMode();
-        updateNumberGridHighlights();
-        updateRepeatsList();
-        
-        for (let cardIdx = 0; cardIdx < 4; cardIdx++) {
-            if (!isManualCardComplete(cardIdx)) {
-                currentManualCard = cardIdx;
-                fillEmptyCellsRandomly();
-            }
-        }
+        return true;
     }
     
     function isManualCardComplete(cardIdx) {
@@ -772,87 +800,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return true;
-    }
-    
-    function generateCardsWithDuplicates(selectedNums) {
-        const allNumbers = Array.from({length: 90}, (_, i) => i + 1);
-        const otherNumbers = allNumbers.filter(num => !selectedNums.includes(num));
-        
-        const duplicatedSelected = [...selectedNums, ...selectedNums];
-        shuffleArray(duplicatedSelected);
-        shuffleArray(otherNumbers);
-        
-        const cards = [];
-        
-        const selectedDistribution = [
-            duplicatedSelected.slice(0, 5),
-            duplicatedSelected.slice(5, 10),
-            duplicatedSelected.slice(10, 15),
-            duplicatedSelected.slice(15, 20)
-        ];
-        
-        const otherDistribution = [
-            otherNumbers.slice(0, 20),
-            otherNumbers.slice(20, 40),
-            otherNumbers.slice(40, 55),
-            otherNumbers.slice(55, 70)
-        ];
-        
-        for (let i = 0; i < 4; i++) {
-            let cardNumbers = [];
-            let attempts = 0;
-            const maxAttempts = 10;
-            
-            do {
-                cardNumbers = [];
-                cardNumbers.push(...selectedDistribution[i]);
-                cardNumbers.push(...otherDistribution[i]);
-                
-                if (cardNumbers.length < 25) {
-                    const needed = 25 - cardNumbers.length;
-                    const availableNumbers = allNumbers.filter(
-                        n => !cardNumbers.includes(n) && !selectedNums.includes(n)
-                    );
-                    shuffleArray(availableNumbers);
-                    cardNumbers.push(...availableNumbers.slice(0, needed));
-                }
-                
-                const uniqueNumbers = new Set(cardNumbers);
-                if (uniqueNumbers.size === 25) break;
-                
-                attempts++;
-                if (attempts >= maxAttempts) {
-                    console.warn(`No se pudo generar cartilla ${i+1} sin duplicados`);
-                    cardNumbers = Array.from(new Set(cardNumbers));
-                    while (cardNumbers.length < 25) {
-                        const randomNum = Math.floor(Math.random() * 90) + 1;
-                        if (!cardNumbers.includes(randomNum)) {
-                            cardNumbers.push(randomNum);
-                        }
-                    }
-                    break;
-                }
-                
-                shuffleArray(selectedDistribution[i]);
-                shuffleArray(otherDistribution[i]);
-            } while (true);
-            
-            if (cardNumbers.length !== 25) {
-                cardNumbers = cardNumbers.slice(0, 25);
-            }
-            
-            shuffleArray(cardNumbers);
-            
-            const card = [];
-            for (let row = 0; row < 5; row++) {
-                const rowNumbers = cardNumbers.slice(row * 5, (row + 1) * 5);
-                card.push(rowNumbers);
-            }
-            
-            cards.push(card);
-        }
-        
-        return cards;
     }
     
     function shuffleArray(array) {
@@ -912,7 +859,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return formattedCard;
             });
         } else {
-            bingoCards = generateCardsWithDuplicates(selectedNumbers);
+            try {
+                bingoCards = generateCardsWithDuplicates(selectedNumbers);
+            } catch (e) {
+                showCustomAlert('Error al regenerar las cartillas: ' + e.message);
+                return;
+            }
         }
         displayBingoCards();
     }
@@ -940,10 +892,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const canvasPromises = bingoCards.map((card, i) => createCardImage(card, i + 1));
             const canvases = await Promise.all(canvasPromises);
             
-            canvases.forEach((canvas) => {
+            canvases.forEach((canvas, index) => {
                 const previewCard = document.createElement('div');
                 previewCard.className = 'preview-card';
                 previewCard.appendChild(canvas);
+                
+                previewCard.addEventListener('click', () => {
+                    openModal(index);
+                });
+                
                 previewContainer.appendChild(previewCard);
             });
             
@@ -953,10 +910,143 @@ document.addEventListener('DOMContentLoaded', function() {
             imagePreviewSection.classList.add('active-step');
         } catch (error) {
             console.error('Error generando imágenes:', error);
-            alert('Ocurrió un error al generar las imágenes. Por favor verifica que todas las imágenes de números estén disponibles.');
+            showCustomAlert('Ocurrió un error al generar las imágenes. Por favor verifica que todas las imágenes de números estén disponibles.');
         } finally {
             loader.style.display = 'none';
         }
+    }
+    
+    function openModal(cardIndex) {
+        currentModalCardIndex = cardIndex;
+        updateModalCard();
+        modal.style.display = 'block';
+    }
+    
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+    
+    function showPrevCard() {
+        if (currentModalCardIndex > 0) {
+            currentModalCardIndex--;
+            updateModalCard();
+        }
+    }
+    
+    function showNextCard() {
+        if (currentModalCardIndex < bingoCards.length - 1) {
+            currentModalCardIndex++;
+            updateModalCard();
+        }
+    }
+    
+    async function updateModalCard() {
+        modalCardNumber.textContent = `${currentModalCardIndex + 1}/${bingoCards.length}`;
+        
+        prevCardBtn.disabled = currentModalCardIndex === 0;
+        nextCardBtn.disabled = currentModalCardIndex === bingoCards.length - 1;
+        
+        const ctx = modalCanvas.getContext('2d');
+        const card = bingoCards[currentModalCardIndex];
+        
+        const cellSize = 150;
+        const padding = 20;
+        const margin = 40;
+        const width = 5 * cellSize + 2 * padding + 2 * margin;
+        const height = 5 * cellSize + 2 * padding + 2 * margin;
+        
+        modalCanvas.width = width;
+        modalCanvas.height = height;
+        
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(margin/2, margin/2, width - margin, height - margin);
+        ctx.setLineDash([]);
+        
+        const imagePromises = [];
+        
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                const number = card[row][col];
+                const x = margin + padding + col * cellSize;
+                const y = margin + padding + row * cellSize;
+                
+                ctx.strokeStyle = isManualMode 
+                    ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#0a9396')
+                    : (selectedNumbers.includes(number) ? '#ca6702' : '#0a9396');
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, cellSize, cellSize);
+                
+                imagePromises.push(
+                    (async () => {
+                        try {
+                            let img;
+                            try {
+                                if (currentImageFormat === 'jpgA') {
+                                    img = await loadImage(`${number}A.jpg`);
+                                } else {
+                                    img = await loadImage(`${number}.${currentImageFormat}`);
+                                }
+                            } catch (e) {
+                                img = await loadImage(`${number}.jpg`);
+                            }
+                            
+                            const imgPadding = 5;
+                            ctx.drawImage(
+                                img, 
+                                x + imgPadding, 
+                                y + imgPadding, 
+                                cellSize - 2 * imgPadding, 
+                                cellSize - 2 * imgPadding
+                            );
+                            
+                        } catch (error) {
+                            console.error(`Error cargando imagen para número ${number}:`, error);
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                            ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
+                            
+                            ctx.fillStyle = isManualMode
+                                ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#005f73')
+                                : (selectedNumbers.includes(number) ? '#ca6702' : '#005f73');
+                            ctx.font = 'bold 36px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(number, x + cellSize/2, y + cellSize/2);
+                        }
+                        
+                        if (currentImageFormat === 'webp') {
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                            ctx.fillRect(x + 5, y + 15, 40, 30);
+                            
+                            ctx.fillStyle = isManualMode
+                                ? ((usedNumbers.get(number) || 0) > 1 ? '#FFD700' : 'white')
+                                : (selectedNumbers.includes(number)) ? '#FFD700' : 'white';
+                            ctx.font = 'bold 20px Arial';
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                            ctx.shadowBlur = 3;
+                            ctx.shadowOffsetX = 1;
+                            ctx.shadowOffsetY = 1;
+                            ctx.fillText(number, x + 10, y + 30);
+                            ctx.shadowColor = 'transparent';
+                        }
+                    })()
+                );
+            }
+        }
+        
+        await Promise.all(imagePromises);
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.font = 'italic 14px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Generado por E. Sanchez', margin + 10, height - margin - 3);
     }
     
     async function createCardImage(cardNumbers, cardIndex) {
@@ -1021,8 +1111,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
                         
                         ctx.fillStyle = isManualMode
-                            ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#005f73')  // Modo manual
-                            : (selectedNumbers.includes(number) ? '#ca6702' : '#005f73');  // Modo automático
+                            ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#005f73')
+                            : (selectedNumbers.includes(number) ? '#ca6702' : '#005f73');
                         ctx.font = 'bold 36px Arial';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
@@ -1068,5 +1158,44 @@ document.addEventListener('DOMContentLoaded', function() {
             img.onerror = reject;
             img.src = src;
         });
+    }
+
+    function openPlayPage() {
+        localStorage.setItem('bingoCards', JSON.stringify(bingoCards));
+        localStorage.setItem('isManualMode', isManualMode);
+        localStorage.setItem('usedNumbers', JSON.stringify(Array.from(usedNumbers.entries())));
+        localStorage.setItem('selectedNumbers', JSON.stringify(selectedNumbers));
+        localStorage.setItem('imageFormat', currentImageFormat);
+        
+        window.open('play.html', '_blank');
+    }
+
+    function showCustomAlert(message) {
+        // Implementación de alerta personalizada para evitar el problema de iframe
+        const alertDiv = document.createElement('div');
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '50%';
+        alertDiv.style.left = '50%';
+        alertDiv.style.transform = 'translate(-50%, -50%)';
+        alertDiv.style.backgroundColor = 'white';
+        alertDiv.style.padding = '20px';
+        alertDiv.style.borderRadius = '5px';
+        alertDiv.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+        alertDiv.style.zIndex = '9999';
+        
+        const messageP = document.createElement('p');
+        messageP.textContent = message;
+        alertDiv.appendChild(messageP);
+        
+        const okButton = document.createElement('button');
+        okButton.textContent = 'Aceptar';
+        okButton.style.marginTop = '10px';
+        okButton.style.padding = '5px 15px';
+        okButton.addEventListener('click', () => {
+            document.body.removeChild(alertDiv);
+        });
+        alertDiv.appendChild(okButton);
+        
+        document.body.appendChild(alertDiv);
     }
 });

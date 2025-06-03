@@ -433,6 +433,12 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .preview-card:hover {
+            transform: scale(1.03);
         }
 
         .preview-card canvas {
@@ -485,6 +491,70 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Estilos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: var(--dark-gray);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-blue);
+        }
+
+        .modal-card-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .modal-card-container canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .modal-navigation span {
+            font-weight: bold;
+            color: var(--primary-blue);
+            min-width: 80px;
+            text-align: center;
+        }
+
         @media (max-width: 1200px) {
             .manual-layout {
                 grid-template-columns: 1fr;
@@ -516,6 +586,11 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
         }
 
         @media (max-width: 480px) {
@@ -525,6 +600,11 @@
             
             #manual-layout .number-grid {
                 grid-template-columns: repeat(3, 1fr);
+            }
+
+            .modal-navigation {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
@@ -647,6 +727,24 @@
         <div class="loader">
             <div class="spinner"></div>
             <p>Generando imágenes...</p>
+        </div>
+    </div>
+
+    <!-- Modal para visualización de cartillas -->
+    <div class="modal" id="card-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-card-container">
+                <canvas id="modal-card-canvas"></canvas>
+            </div>
+            <div class="modal-navigation">
+                <button id="prev-card" class="btn secondary"><i class="fas fa-chevron-left"></i> Anterior</button>
+                <span id="modal-card-number">1/4</span>
+                <button id="next-card" class="btn secondary">Siguiente <i class="fas fa-chevron-right"></i></button>
+                <button id="open-play-page" class="btn secondary">
+                    <i class="fas fa-gamepad"></i> Jugar con estas cartillas
+            </button>
+            </div>
         </div>
     </div>
 
