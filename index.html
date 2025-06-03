@@ -126,6 +126,46 @@
             background: white;
         }
 
+        /* Estilos para el contenedor de formas de ganar */
+        .formas-ganar-container {
+            display: none;
+            width: 100%;
+            padding: 80px 20px 20px;
+            background: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .formas-ganar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .forma-ganar-item {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s;
+        }
+
+        .forma-ganar-item:hover {
+            transform: scale(1.03);
+        }
+
+        .forma-ganar-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
         /* Estilos para el botón de volver */
         .back-button {
             position: fixed;
@@ -170,6 +210,16 @@
                 width: 100%;
                 max-width: 350px;
             }
+
+            .formas-ganar-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .formas-ganar-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -196,6 +246,15 @@
                 <p>Crea tus propias cartillas personalizadas con números repetidos.</p>
                 <button class="menu-btn">Generar cartillas</button>
             </div>
+
+            <div class="menu-card" onclick="loadApp('formas-ganar')">
+                <div class="menu-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2>Formas de Ganar</h2>
+                <p>Conoce todas las posibles combinaciones ganadoras en la lotería.</p>
+                <button class="menu-btn">Ver formas</button>
+            </div>
         </div>
     </div>
 
@@ -204,6 +263,13 @@
 
     <!-- Iframe para el Generador de Cartillas -->
     <iframe id="cartillas-iframe" class="app-iframe" src="about:blank"></iframe>
+
+    <!-- Contenedor para Formas de Ganar -->
+    <div id="formas-ganar-container" class="formas-ganar-container">
+        <div class="formas-ganar-grid" id="formas-ganar-grid">
+            <!-- Las imágenes se cargarán dinámicamente aquí -->
+        </div>
+    </div>
 
     <!-- Botón de volver (se muestra solo en las apps) -->
     <button id="back-btn" class="back-button" onclick="returnToMenu()">
@@ -223,14 +289,44 @@
             
             if (appName === 'loteria') {
                 document.getElementById('cartillas-iframe').style.display = 'none';
+                document.getElementById('formas-ganar-container').style.display = 'none';
                 const iframe = document.getElementById('loteria-iframe');
                 iframe.style.display = 'block';
                 iframe.src = 'loteria.html';
             } else if (appName === 'cartillas') {
                 document.getElementById('loteria-iframe').style.display = 'none';
+                document.getElementById('formas-ganar-container').style.display = 'none';
                 const iframe = document.getElementById('cartillas-iframe');
                 iframe.style.display = 'block';
                 iframe.src = 'cartillas.html';
+            } else if (appName === 'formas-ganar') {
+                document.getElementById('loteria-iframe').style.display = 'none';
+                document.getElementById('cartillas-iframe').style.display = 'none';
+                const container = document.getElementById('formas-ganar-container');
+                container.style.display = 'block';
+                
+                // Cargar imágenes (a.jpg a o.jpg)
+                const grid = document.getElementById('formas-ganar-grid');
+                grid.innerHTML = '';
+                
+                for (let i = 0; i < 15; i++) {
+                    const letter = String.fromCharCode(97 + i); // 97 es 'a' en ASCII
+                    const imgUrl = `${letter}.jpg`;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'forma-ganar-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = imgUrl;
+                    img.alt = `Forma de ganar ${letter.toUpperCase()}`;
+                    img.onerror = function() {
+                        this.style.display = 'none';
+                        item.innerHTML = `<div style="padding: 20px; text-align: center;">Imagen no disponible (${letter}.jpg)</div>`;
+                    };
+                    
+                    item.appendChild(img);
+                    grid.appendChild(item);
+                }
             }
         }
 
@@ -239,6 +335,7 @@
             document.getElementById('main-menu').style.display = 'flex';
             document.getElementById('loteria-iframe').style.display = 'none';
             document.getElementById('cartillas-iframe').style.display = 'none';
+            document.getElementById('formas-ganar-container').style.display = 'none';
             document.getElementById('back-btn').style.display = 'none';
             document.body.style.overflow = 'auto';
             
