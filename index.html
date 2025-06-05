@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lotería Campechana</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -136,8 +136,9 @@
             top: 0;
             left: 0;
             z-index: 100;
-            min-height: 100vh;
+            height: 100vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .formas-ganar-grid {
@@ -146,6 +147,7 @@
             gap: 15px;
             max-width: 1000px;
             margin: 0 auto;
+            padding-bottom: 20px;
         }
 
         .forma-ganar-item {
@@ -163,6 +165,8 @@
         .forma-ganar-item img {
             width: 100%;
             height: auto;
+            max-height: 200px;
+            object-fit: contain;
             display: block;
         }
 
@@ -213,6 +217,7 @@
 
             .formas-ganar-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
             }
         }
 
@@ -304,13 +309,14 @@
                 document.getElementById('cartillas-iframe').style.display = 'none';
                 const container = document.getElementById('formas-ganar-container');
                 container.style.display = 'block';
+                container.scrollTop = 0; // Resetear posición del scroll
                 
                 // Cargar imágenes (a.jpg a o.jpg)
                 const grid = document.getElementById('formas-ganar-grid');
                 grid.innerHTML = '';
                 
                 for (let i = 0; i < 15; i++) {
-                    const letter = String.fromCharCode(65 + i); // 97 es 'a' en ASCII
+                    const letter = String.fromCharCode(97 + i); // 97 es 'a' en ASCII
                     const imgUrl = `${letter}.jpg`;
                     
                     const item = document.createElement('div');
