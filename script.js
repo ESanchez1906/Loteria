@@ -355,107 +355,130 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function handleManualNumberSelection(number) {
-        let emptyCellFound = false;
-        
-        for (let row = 0; row < 5 && !emptyCellFound; row++) {
-            for (let col = 0; col < 5 && !emptyCellFound; col++) {
-                if (manualCardsNumbers[currentManualCard][row][col] === null) {
-                    emptyCellFound = true;
-                    
-                    const currentCount = usedNumbers.get(number) || 0;
-                    
-                    if (currentCount >= 1) {
-                        if (repeatedNumbersCount < MAX_REPEATED) {
-                            usedNumbers.set(number, currentCount + 1);
-                            repeatedNumbersCount++;
-                        } else {
-                            showCustomAlert(`Ya has alcanzado el máximo de ${MAX_REPEATED} números repetidos.`);
-                            return;
-                        }
+    let emptyCellFound = false;
+    
+    // Verificar si el número ya está en la cartilla actual
+    const isNumberInCurrentCard = manualCardsNumbers[currentManualCard].some(row => 
+        row.some(cellNum => cellNum === number)
+    );
+    
+    if (isNumberInCurrentCard) {
+        showCustomAlert('Este número ya está en la cartilla actual. No se permiten repeticiones dentro de la misma cartilla.');
+        return;
+    }
+    
+    for (let row = 0; row < 5 && !emptyCellFound; row++) {
+        for (let col = 0; col < 5 && !emptyCellFound; col++) {
+            if (manualCardsNumbers[currentManualCard][row][col] === null) {
+                emptyCellFound = true;
+                
+                const currentCount = usedNumbers.get(number) || 0;
+                
+                // Verificar si el número ya ha sido usado 2 veces (máximo permitido)
+                if (currentCount >= 2) {
+                    showCustomAlert(`El número ${number} ya ha sido usado 2 veces (máximo permitido).`);
+                    return;
+                }
+                
+                if (currentCount >= 1) {
+                    if (repeatedNumbersCount < MAX_REPEATED) {
+                        usedNumbers.set(number, currentCount + 1);
+                        repeatedNumbersCount++;
                     } else {
-                        usedNumbers.set(number, 1);
+                        showCustomAlert(`Ya has alcanzado el máximo de ${MAX_REPEATED} números repetidos.`);
+                        return;
                     }
-                    
-                    manualCardsNumbers[currentManualCard][row][col] = number;
+                } else {
+                    usedNumbers.set(number, 1);
                 }
+                
+                manualCardsNumbers[currentManualCard][row][col] = number;
             }
         }
-        
-        if (!emptyCellFound) {
-            showCustomAlert('Esta cartilla ya está completa. Haz clic en un número existente para reemplazarlo.');
-            return;
-        }
-        
-        updateCurrentCardGrid();
-        updateUIForCurrentMode();
-        updateNumberGridHighlights();
-        updateRepeatsList();
     }
     
-    function fillEmptyCellsRandomly() {
-        const currentCard = manualCardsNumbers[currentManualCard];
-        const emptyCells = [];
-        const availableNumbers = [];
-        
-        for (let row = 0; row < 5; row++) {
-            for (let col = 0; col < 5; col++) {
-                if (currentCard[row][col] === null) {
-                    emptyCells.push({row, col});
-                }
-            }
-        }
-        
-        if (emptyCells.length === 0) {
-            showCustomAlert('Esta cartilla ya está completa.');
-            return;
-        }
-        
-        const remainingRepeats = MAX_REPEATED - repeatedNumbersCount;
-        const canAddMoreRepeats = remainingRepeats > 0;
-        
-        for (let num = 1; num <= 90; num++) {
-            const count = usedNumbers.get(num) || 0;
-            
-            if (count === 0 || (count === 1 && canAddMoreRepeats)) {
-                availableNumbers.push({
-                    number: num,
-                    canRepeat: count === 1
-                });
-            }
-        }
-        
-        shuffleArray(availableNumbers);
-        
-        const nonRepeatedNumbers = availableNumbers.filter(item => !item.canRepeat);
-        for (const cell of emptyCells) {
-            if (nonRepeatedNumbers.length > 0) {
-                const numObj = nonRepeatedNumbers.pop();
-                currentCard[cell.row][cell.col] = numObj.number;
-                usedNumbers.set(numObj.number, 1);
-            }
-        }
-        
-        const remainingEmptyCells = emptyCells.filter(cell => currentCard[cell.row][cell.col] === null);
-        const repeatedNumbers = availableNumbers.filter(item => item.canRepeat);
-        
-        for (const cell of remainingEmptyCells) {
-            if (repeatedNumbers.length > 0 && repeatedNumbersCount < MAX_REPEATED) {
-                const numObj = repeatedNumbers.pop();
-                currentCard[cell.row][cell.col] = numObj.number;
-                usedNumbers.set(numObj.number, 2);
-                repeatedNumbersCount++;
-            } else {
-                showCustomAlert('No hay números disponibles que cumplan las reglas de repetición.');
-                break;
-            }
-        }
-        
-        updateCurrentCardGrid();
-        updateUIForCurrentMode();
-        updateNumberGridHighlights();
-        updateRepeatsList();
+    if (!emptyCellFound) {
+        showCustomAlert('Esta cartilla ya está completa. Haz clic en un número existente para reemplazarlo.');
+        return;
     }
     
+    updateCurrentCardGrid();
+    updateUIForCurrentMode();
+    updateNumberGridHighlights();
+    updateRepeatsList();
+}
+    
+   function fillEmptyCellsRandomly() {
+    const currentCard = manualCardsNumbers[currentManualCard];
+    const emptyCells = [];
+    const availableNumbers = [];
+    
+    // Encontrar celdas vacías
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+            if (currentCard[row][col] === null) {
+                emptyCells.push({row, col});
+            }
+        }
+    }
+    
+    if (emptyCells.length === 0) {
+        showCustomAlert('Esta cartilla ya está completa.');
+        return;
+    }
+    
+    const remainingRepeats = MAX_REPEATED - repeatedNumbersCount;
+    const canAddMoreRepeats = remainingRepeats > 0;
+    
+    // Preparar números disponibles
+    for (let num = 1; num <= 90; num++) {
+        const count = usedNumbers.get(num) || 0;
+        
+        // Verificar que el número no esté ya en esta cartilla
+        const isInCurrentCard = currentCard.some(row => row.includes(num));
+        if (isInCurrentCard) continue;
+        
+        if (count === 0 || (count === 1 && canAddMoreRepeats)) {
+            availableNumbers.push({
+                number: num,
+                canRepeat: count === 1
+            });
+        }
+    }
+    
+    shuffleArray(availableNumbers);
+    
+    // Primero llenar con números no repetidos
+    const nonRepeatedNumbers = availableNumbers.filter(item => !item.canRepeat);
+    for (const cell of emptyCells) {
+        if (nonRepeatedNumbers.length > 0) {
+            const numObj = nonRepeatedNumbers.pop();
+            currentCard[cell.row][cell.col] = numObj.number;
+            usedNumbers.set(numObj.number, 1);
+        }
+    }
+    
+    // Luego llenar con números repetidos si es necesario
+    const remainingEmptyCells = emptyCells.filter(cell => currentCard[cell.row][cell.col] === null);
+    const repeatedNumbers = availableNumbers.filter(item => item.canRepeat);
+    
+    for (const cell of remainingEmptyCells) {
+        if (repeatedNumbers.length > 0 && repeatedNumbersCount < MAX_REPEATED) {
+            const numObj = repeatedNumbers.pop();
+            currentCard[cell.row][cell.col] = numObj.number;
+            usedNumbers.set(numObj.number, 2);
+            repeatedNumbersCount++;
+        } else {
+            showCustomAlert('No hay números disponibles que cumplan las reglas de repetición.');
+            break;
+        }
+    }
+    
+    updateCurrentCardGrid();
+    updateUIForCurrentMode();
+    updateNumberGridHighlights();
+    updateRepeatsList();
+}
     function updateRepeatsList() {
         repeatsList.innerHTML = '';
         
@@ -561,12 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            try {
-                bingoCards = generateCardsWithDuplicates(selectedNumbers);
-            } catch (e) {
-                showCustomAlert('Error al generar las cartillas: ' + e.message);
-                return;
-            }
+            bingoCards = generateCardsWithDuplicates(selectedNumbers);
         }
         
         displayBingoCards();
@@ -578,116 +596,205 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function generateCardsWithDuplicates(selectedNums) {
-        if (selectedNums.length !== 10) {
-            throw new Error('Deben seleccionarse exactamente 10 números');
-        }
-
-        const MAX_ATTEMPTS = 1000;
-        let attempts = 0;
-        let success = false;
-        let cards = [];
-
-        while (!success && attempts < MAX_ATTEMPTS) {
-            attempts++;
-            try {
-                cards = attemptGenerateCardsWithRandomDistribution(selectedNums);
-                success = validateCards(cards, selectedNums);
-            } catch (e) {
-                continue;
-            }
-        }
-
-        if (!success) {
-            throw new Error(`No se pudo generar las cartillas después de ${MAX_ATTEMPTS} intentos. Intenta con diferentes números.`);
-        }
-
-        return cards;
+    if (selectedNums.length !== 10) {
+        throw new Error('Deben seleccionarse exactamente 10 números');
     }
 
-    function attemptGenerateCardsWithRandomDistribution(selectedNums) {
-        const duplicatedSelected = [...selectedNums, ...selectedNums];
-        const otherNumbers = Array.from({length: 90}, (_, i) => i + 1)
-            .filter(num => !selectedNums.includes(num));
+    const allNumbers = Array.from({length: 90}, (_, i) => i + 1);
+    const nonSelectedNumbers = allNumbers.filter(num => !selectedNums.includes(num));
+    const duplicatedSelected = [...selectedNums, ...selectedNums];
+    
+    shuffleArray(duplicatedSelected);
+    shuffleArray(nonSelectedNumbers);
+
+    let validCards = false;
+    let cards;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 1000;
+
+    while (!validCards && attempts < MAX_ATTEMPTS) {
+        attempts++;
+        cards = [];
         
-        shuffleArray(duplicatedSelected);
-        shuffleArray(otherNumbers);
+        // Creamos un mapa para rastrear dónde colocamos cada número seleccionado
+        const selectedNumUsage = new Map();
+        selectedNums.forEach(num => {
+            selectedNumUsage.set(num, [false, false]); // [usadoEnCartilla1, usadoEnCartilla2]
+        });
 
-        const cards = [];
-        const selectedUsage = new Map(selectedNums.map(num => [num, 0]));
-
+        // Creamos las 4 cartillas vacías
         for (let i = 0; i < 4; i++) {
-            const cardNumbers = [];
-            const usedInCard = new Set();
-
-            let selectedInCard = 0;
-            while (selectedInCard < 5) {
-                const availableSelected = duplicatedSelected.filter(num => 
-                    selectedUsage.get(num) < 2 && !usedInCard.has(num)
-                );
-
-                if (availableSelected.length === 0) {
-                    throw new Error('No hay números seleccionados disponibles');
-                }
-
-                const randomIndex = Math.floor(Math.random() * availableSelected.length);
-                const num = availableSelected[randomIndex];
-
-                const insertPos = Math.floor(Math.random() * (cardNumbers.length + 1));
-                cardNumbers.splice(insertPos, 0, num);
-                
-                usedInCard.add(num);
-                selectedUsage.set(num, selectedUsage.get(num) + 1);
-                selectedInCard++;
-            }
-            
-            const remainingNumbers = otherNumbers.filter(num => !usedInCard.has(num));
-            shuffleArray(remainingNumbers);
-            
-            for (const num of remainingNumbers.slice(0, 20)) {
-                const insertPos = Math.floor(Math.random() * (cardNumbers.length + 1));
-                cardNumbers.splice(insertPos, 0, num);
-                usedInCard.add(num);
-            }
-            
-            const card = [];
-            for (let row = 0; row < 5; row++) {
-                card.push(cardNumbers.slice(row * 5, (row + 1) * 5));
-            }
-            
-            cards.push(card);
+            cards.push(Array(5).fill().map(() => Array(5).fill(null)));
         }
 
-        return cards;
+        // Primero colocamos los números seleccionados (2 veces cada uno en diferentes cartillas)
+        for (const num of selectedNums) {
+            for (let copy = 0; copy < 2; copy++) {
+                let placed = false;
+                let attemptsPlacement = 0;
+                const MAX_PLACEMENT_ATTEMPTS = 50;
+
+                while (!placed && attemptsPlacement < MAX_PLACEMENT_ATTEMPTS) {
+                    attemptsPlacement++;
+                    const cardIdx = Math.floor(Math.random() * 4);
+                    
+                    // Verificar que el número no esté ya en esta cartilla
+                    let alreadyInCard = false;
+                    for (let row = 0; row < 5; row++) {
+                        for (let col = 0; col < 5; col++) {
+                            if (cards[cardIdx][row][col] === num) {
+                                alreadyInCard = true;
+                                break;
+                            }
+                        }
+                        if (alreadyInCard) break;
+                    }
+                    
+                    if (!alreadyInCard) {
+                        // Buscar una celda vacía en esta cartilla
+                        const emptyCells = [];
+                        for (let row = 0; row < 5; row++) {
+                            for (let col = 0; col < 5; col++) {
+                                if (cards[cardIdx][row][col] === null) {
+                                    emptyCells.push({row, col});
+                                }
+                            }
+                        }
+                        
+                        if (emptyCells.length > 0) {
+                            const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                            cards[cardIdx][randomCell.row][randomCell.col] = num;
+                            placed = true;
+                        }
+                    }
+                }
+                
+                if (!placed) {
+                    // Si no pudimos colocar después de varios intentos, rompemos el ciclo
+                    break;
+                }
+            }
+        }
+
+        // Luego completamos con los números no seleccionados (1 vez cada uno)
+        for (let i = 0; i < 4; i++) {
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    if (cards[i][row][col] === null) {
+                        if (nonSelectedNumbers.length === 0) {
+                            // Esto no debería pasar si la lógica anterior es correcta
+                            console.error("No hay suficientes números no seleccionados");
+                            cards[i][row][col] = 1; // Valor por defecto por si acaso
+                        } else {
+                            cards[i][row][col] = nonSelectedNumbers.pop();
+                        }
+                    }
+                }
+            }
+        }
+
+        // Validamos las cartillas
+        validCards = validateCardsSilently(cards, selectedNums);
     }
 
-    function validateCards(cards, selectedNums) {
-        const countMap = new Map(selectedNums.map(num => [num, 0]));
+    if (!validCards) {
+        // Si no encontramos solución después de muchos intentos, forzamos una válida
+        cards = forceValidSolution(selectedNums);
+    }
+
+    return cards;
+}
+
+    function validateCardsSilently(cards, selectedNums) {
+        const countMap = new Map();
         
         cards.forEach(card => {
             card.forEach(row => {
                 row.forEach(num => {
-                    if (selectedNums.includes(num)) {
-                        countMap.set(num, countMap.get(num) + 1);
-                    }
+                    countMap.set(num, (countMap.get(num) || 0) + 1);
                 });
             });
         });
         
-        for (const [num, count] of countMap) {
-            if (count !== 2) {
+        for (const num of selectedNums) {
+            if (countMap.get(num) !== 2) return false;
+        }
+        
+        for (let num = 1; num <= 90; num++) {
+            if (!selectedNums.includes(num) && countMap.get(num) !== 1) {
                 return false;
             }
         }
         
-        for (const card of cards) {
-            const uniqueNumbers = new Set(card.flat());
-            if (uniqueNumbers.size !== 25) {
-                return false;
-            }
+        for (let i = 0; i < cards.length; i++) {
+            if (new Set(cards[i].flat()).size !== 25) return false;
         }
         
         return true;
     }
+
+    function forceValidSolution(selectedNums) {
+    const allNumbers = Array.from({length: 90}, (_, i) => i + 1);
+    const nonSelectedNumbers = allNumbers.filter(num => !selectedNums.includes(num));
+    const cards = Array(4).fill().map(() => Array(5).fill().map(() => Array(5).fill(null)));
+    
+    // Primero colocamos los números seleccionados (2 veces cada uno en diferentes cartillas)
+    for (const num of selectedNums) {
+        let placedCopies = 0;
+        
+        while (placedCopies < 2) {
+            const cardIdx = Math.floor(Math.random() * 4);
+            
+            // Verificar que el número no esté ya en esta cartilla
+            let alreadyInCard = false;
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    if (cards[cardIdx][row][col] === num) {
+                        alreadyInCard = true;
+                        break;
+                    }
+                }
+                if (alreadyInCard) break;
+            }
+            
+            if (!alreadyInCard) {
+                // Buscar una celda vacía en esta cartilla
+                const emptyCells = [];
+                for (let row = 0; row < 5; row++) {
+                    for (let col = 0; col < 5; col++) {
+                        if (cards[cardIdx][row][col] === null) {
+                            emptyCells.push({row, col});
+                        }
+                    }
+                }
+                
+                if (emptyCells.length > 0) {
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    cards[cardIdx][randomCell.row][randomCell.col] = num;
+                    placedCopies++;
+                }
+            }
+        }
+    }
+    
+    // Luego completamos con los números no seleccionados (1 vez cada uno)
+    for (let i = 0; i < 4; i++) {
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                if (cards[i][row][col] === null) {
+                    if (nonSelectedNumbers.length === 0) {
+                        console.error("Faltan números no seleccionados");
+                        cards[i][row][col] = 1; // Valor por defecto
+                    } else {
+                        cards[i][row][col] = nonSelectedNumbers.pop();
+                    }
+                }
+            }
+        }
+    }
+    
+    return cards;
+}
 
     function validateAllNumbersPresent() {
         const presentNumbers = new Set();
@@ -859,12 +966,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return formattedCard;
             });
         } else {
-            try {
-                bingoCards = generateCardsWithDuplicates(selectedNumbers);
-            } catch (e) {
-                showCustomAlert('Error al regenerar las cartillas: ' + e.message);
-                return;
-            }
+            bingoCards = generateCardsWithDuplicates(selectedNumbers);
         }
         displayBingoCards();
     }
@@ -1171,7 +1273,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showCustomAlert(message) {
-        // Implementación de alerta personalizada para evitar el problema de iframe
         const alertDiv = document.createElement('div');
         alertDiv.style.position = 'fixed';
         alertDiv.style.top = '50%';
