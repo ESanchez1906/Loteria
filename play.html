@@ -39,6 +39,7 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
+            padding-bottom: 60px;
         }
 
         header {
@@ -52,6 +53,8 @@
 
         h1 {
             color: var(--primary-blue);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
         }
 
         .controls {
@@ -59,6 +62,12 @@
             justify-content: center;
             gap: 15px;
             margin: 20px 0;
+            position: sticky;
+            top: 0;
+            background-color: var(--light-gray);
+            padding: 15px 0;
+            z-index: 90;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .btn {
@@ -92,158 +101,467 @@
             color: white;
         }
 
-.cards-container {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
+        .btn:disabled {
+            background-color: var(--medium-gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
 
-    .bingo-card {
-        background-color: var(--white);
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        position: relative;
-        min-height: 0; /* Necesario para el aspect-ratio */
-    }
+        .btn:disabled:hover {
+            background-color: var(--medium-gray);
+        }
 
-    .card-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 5px;
-        height: 100%;
-        aspect-ratio: 5/5; /* Mantener cuadrado */
-    }
+        .repeated-panel {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--white);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
 
-    .card-cell {
-        position: relative;
-        cursor: pointer;
-        border-radius: 5px;
-        overflow: hidden;
-        border: 1px solid var(--medium-gray);
-        min-height: 0; /* Necesario para el aspect-ratio */
-    }
+        .repeated-panel h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: var(--primary-blue);
+        }
 
-    .card-cell img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
+        .repeated-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
 
-    .card-cell .number {
-        position: absolute;
-        top: 5px;
-        left: 5px;
-        background-color: rgba(0, 0, 0, 0.5);
-        color: white;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: bold;
-        z-index: 2;
-    }
+        .repeated-number {
+            padding: 8px 15px;
+            background-color: var(--light-yellow);
+            border-radius: 20px;
+            font-weight: bold;
+            color: var(--dark-gray);
+            border: 2px solid var(--medium-yellow);
+        }
 
-    .card-cell .marker {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 60%;
-        height: 60%;
-        border-radius: 50%;
-        background-color: rgba(255, 215, 0, 0.8); /* Dorado más visible */
-        border: 3px solid rgba(200, 103, 2, 0.8); /* Borde naranja oscuro */
-        display: none;
-        z-index: 1;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    }
-
-    .card-cell.marked .marker {
-        display: block;
-    }
-
-    /* Estilo para números repetidos */
-    .card-cell.repeated .number {
-        background-color: rgba(202, 103, 2, 0.8); /* Naranja oscuro */
-        color: white;
-        font-weight: bold;
-    }
-
-    /* Estilo para números normales */
-    .card-cell:not(.repeated) .number {
-        background-color: rgba(0, 95, 115, 0.8); /* Azul oscuro */
-        color: white;
-    }
-
-    @media (max-width: 900px) {
         .cards-container {
-            grid-template-columns: 1fr;
-            max-width: 600px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 5x;
+            justify-content: center;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-        
+
         .bingo-card {
-            aspect-ratio: 5/5;
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 650px;
+            border: 1px solid var(--medium-gray);
         }
-    }
 
-    @media (max-width: 500px) {
+        .card-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-blue);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            width: 100%;
+            aspect-ratio: 1/1;
+        }
+
+        .card-cell {
+            position: relative;
+            cursor: pointer;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid var(--medium-gray);
+            background-color: var(--light-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .card-cell img {
+            width: 90%;
+            height: 90%;
+            object-fit: contain;
+            display: block;
+        }
+
         .card-cell .number {
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 2;
         }
-        
+
         .card-cell .marker {
-            width: 50%;
-            height: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 65%;
+            height: 65%;
+            border-radius: 50%;
+            display: none;
+            z-index: 1;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         }
-    }
-     footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: var(--primary-blue);
-        color: white;
-        text-align: center;
-        padding: 10px 0;
-        font-size: 14px;
-        z-index: 100;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    }
 
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding-bottom: 60px; /* Espacio para el footer */
-    }
+        .card-cell.marked .marker {
+            display: block;
+            background-color: rgba(255, 215, 0, 0.8);
+            border: 3px solid rgba(200, 103, 2, 0.8);
+        }
 
-    .controls {
-        margin-bottom: 20px;
-        position: sticky;
-        top: 0;
-        background-color: var(--light-gray);
-        padding: 15px 0;
-        z-index: 90;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+        .card-cell.win-pattern.marked .marker {
+            background-color: white;
+            border: 3px solid #005f73;
+            box-shadow: 0 0 5px rgba(0, 95, 115, 0.8);
+        }
 
-    @media (max-width: 900px) {
-        .container {
-            padding-bottom: 80px; /* Más espacio en móviles */
+        .card-cell.win-pattern {
+            box-shadow: 0 0 15px rgba(0, 95, 115, 0.5);
+            transform: scale(1.05);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .card-cell.repeated .number {
+            background-color: rgba(202, 103, 2, 0.8);
+            color: white;
+            font-weight: bold;
+        }
+
+        .card-cell:not(.repeated) .number {
+            background-color: rgba(0, 95, 115, 0.8);
+            color: white;
+        }
+
+        .win-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--dark-green);
+            color: white;
+            padding: 25px 35px;
+            border-radius: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 0 25px rgba(0,0,0,0.3);
+            display: none;
+            text-align: center;
         }
         
-        footer {
-            padding: 15px 0; /* Más grande en móviles */
+        .win-notification.show {
+            display: block;
+            animation: fadeInOut 3s ease-in-out;
         }
-    }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--primary-blue);
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Estilos para el modo principiante */
+        .numbers-grid-container {
+            width: 23%;
+            float: left;
+            padding: 20px;
+            background-color: var(--white);
+            border-radius: 10px;
+            margin-right: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            margin-bottom: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .number-cell {
+            padding: 10px;
+            text-align: center;
+            background-color: var(--light-gray);
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .number-cell.marked {
+            background-color: var(--primary-blue) !important;
+            color: white !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 12px rgba(0, 95, 115, 0.5);
+        }
+
+        .empty-message {
+            text-align: center;
+            font-style: italic;
+            color: var(--dark-gray);
+            padding: 10px;
+            grid-column: 1 / -1;
+        }
+
+        /* Modo principiante específico */
+        .cards-container.beginner-mode {
+            width: 75% !important;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .beginner-mode .bingo-card {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        .beginner-mode .card-cell .number {
+            width: 22px;
+            height: 22px;
+            font-size: 14px;
+            top: 5px;
+            left: 5px;
+            background-color: rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .beginner-mode .card-cell .marker {
+            width: 60%;
+            height: 60%;
+        }
+
+        /* Estilos para el modal de instrucciones */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: black;
+        }
+
+        /* Estilos para las pestañas */
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 10px 16px;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        .tab button.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            animation: fadeEffect 0.5s;
+        }
+
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+
+        .tabcontent ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .tabcontent li {
+            margin-bottom: 8px;
+        }
+
+        /* Estilos responsive */
+        @media (max-width: 1200px) {
+            .numbers-grid-container {
+                width: 30%;
+            }
+            
+            .cards-container.beginner-mode {
+                width: 70% !important;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .cards-container:not(.beginner-mode) {
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .numbers-grid-container {
+                width: 100% !important;
+                float: none !important;
+                margin-right: 0 !important;
+                max-height: none;
+            }
+            
+            .cards-container.beginner-mode {
+                width: 100% !important;
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding-bottom: 80px;
+            }
+            
+            footer {
+                padding: 15px 0;
+                font-size: 14px;
+            }
+
+            .modal-content {
+                width: 90%;
+                margin: 10% auto;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .cards-container {
+                padding: 15px;
+                gap: 20px;
+            }
+            
+            .bingo-card {
+                padding: 15px;
+            }
+            
+            .card-title {
+                font-size: 1.3rem;
+                margin-bottom: 15px;
+            }
+            
+            .card-grid {
+                gap: 6px;
+            }
+            
+            .card-cell .number {
+                width: 24px;
+                height: 24px;
+                font-size: 14px;
+                top: 6px;
+                left: 6px;
+            }
+            
+            .card-cell .marker {
+                width: 55%;
+                height: 55%;
+            }
+
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 450px) {
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .card-title {
+                font-size: 1.2rem;
+            }
+            
+            .card-cell .number {
+                width: 20px;
+                height: 20px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -254,15 +572,75 @@
         </header>
 
         <div class="controls">
-            <button id="reset-marks" class="btn secondary">
-                <i class="fas fa-redo"></i> Reiniciar Marcas
+            <select id="game-mode" class="btn" style="margin-right: 15px;">
+                <option value="traditional">Tradicional</option>
+                <option value="intermediate">Intermedio</option>
+                <option value="beginner">Principiante</option>
+            </select>
+            <button id="how-to-play" class="btn secondary">
+                <i class="fas fa-question-circle"></i> ¿Cómo jugar?
+            </button>
+            <button id="new-game" class="btn secondary">
+                <i class="fas fa-redo"></i> Juego Nuevo
             </button>
             <button id="return-home" class="btn">
                 <i class="fas fa-home"></i> Volver al Generador
             </button>
         </div>
 
+        <div class="repeated-panel" id="repeated-panel">
+            <h3>Números Repetidos</h3>
+            <div class="repeated-numbers" id="repeated-numbers"></div>
+        </div>
+
         <div class="cards-container" id="cards-container"></div>
+
+        <div id="win-notification" class="win-notification"></div>
+
+        <!-- Modal de instrucciones -->
+        <div id="instructions-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Instrucciones de Juego</h2>
+                
+                <div class="tab">
+                    <button class="tablinks active" data-tab="traditional">Tradicional</button>
+                    <button class="tablinks" data-tab="intermediate">Intermedio</button>
+                    <button class="tablinks" data-tab="beginner">Principiante</button>
+                </div>
+                
+                <div id="traditional" class="tabcontent" style="display:block;">
+                    <h3>Modo Tradicional</h3>
+                    <p>El modo clásico de juego donde:</p>
+                    <ul>
+                        <li>Debes marcar manualmente cada figura en cada cartilla.</li>
+                        <li>No hay sincronización automática entre cartillas.</li>
+                        <li>Ideal para jugadores experimentados.</li>
+                    </ul>
+                </div>
+                
+                <div id="intermediate" class="tabcontent">
+                    <h3>Modo Intermedio</h3>
+                    <p>Un modo balanceado donde:</p>
+                    <ul>
+                        <li>Las figuras repetidas se resaltan.</li>
+                        <li>Al marcar una figura, se marca en todas las cartillas donde aparezca.</li>
+                        <li>Se detectan automáticamente patrones ganadores.</li>
+                    </ul>
+                </div>
+                
+                <div id="beginner" class="tabcontent">
+                    <h3>Modo Principiante</h3>
+                    <p>El modo más fácil para aprender:</p>
+                    <ul>
+                        <li>Panel lateral con todos los números disponibles.</li>
+                        <li>Marcar un número aquí lo marca en todas las cartillas.</li>
+                        <li>Visualización clara de patrones ganadores.</li>
+                        <li>Ideal para nuevos jugadores.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
         <footer>
             Creado por E. Sanchez - 2025
