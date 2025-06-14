@@ -57,6 +57,16 @@
             margin-bottom: 10px;
         }
 
+        #start-message {
+            font-size: 1.2rem;
+            padding: 15px;
+            background-color: var(--light-yellow);
+            border-radius: 5px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
+
         .controls {
             display: flex;
             justify-content: center;
@@ -338,6 +348,10 @@
             transition: all 0.3s ease;
         }
 
+        .number-cell:hover {
+            background-color: var(--medium-gray);
+        }
+
         .number-cell.marked {
             background-color: var(--primary-blue) !important;
             color: white !important;
@@ -570,6 +584,8 @@
             <h1>Juego de Lotería Campechana</h1>
             <p>Haz clic en las figuras para marcarlas/desmarcarlas</p>
         </header>
+
+        <div id="start-message">Haz clic en cualquier número para comenzar el juego</div>
 
         <div class="controls">
             <select id="game-mode" class="btn" style="margin-right: 15px;">

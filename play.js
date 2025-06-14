@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const repeatedNumbersContainer = document.getElementById('repeated-numbers');
     const instructionsModal = document.getElementById('instructions-modal');
     const closeModalBtn = document.querySelector('.close-modal');
+    const startMessage = document.getElementById('start-message');
     
     // Cargar datos desde localStorage
     const bingoCards = JSON.parse(localStorage.getItem('bingoCards'));
@@ -85,17 +86,16 @@ document.addEventListener('DOMContentLoaded', function() {
         custom_48: [[0,2], [1,1], [2,0], [3,1], [4,2]]
     };
     
-    // Mostrar las cartillas
+    // Mostrar las cartillas inmediatamente
     displayCards();
     updateRepeatedNumbersPanel();
+    toggleGameMode();
+    startMessage.style.display = 'none';
     
     // Event listeners
     newGameBtn.addEventListener('click', resetAllMarks);
     returnHomeBtn.addEventListener('click', () => window.location.href = 'cartillas.html');
-    gameModeSelect.addEventListener('change', function() {
-        currentGameMode = this.value;
-        toggleGameMode();
-    });
+    gameModeSelect.addEventListener('change', toggleGameMode);
     
     // Event listeners para el modal de instrucciones
     howToPlayBtn.addEventListener('click', openInstructionsModal);
@@ -136,16 +136,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function toggleGameMode() {
+        currentGameMode = gameModeSelect.value;
+        
         if (currentGameMode === 'beginner') {
             createNumbersGrid();
             cardsContainer.style.width = '75%';
             cardsContainer.style.float = 'right';
             cardsContainer.classList.add('beginner-mode');
             
-            // Mostrar panel de repetidos si hay números repetidos
             updateRepeatedNumbersPanel();
-            
-            // Sincronizar marcas existentes
             syncNumberGridWithCards();
         } else if (currentGameMode === 'intermediate') {
             if (allNumbersGrid) {
@@ -155,8 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
             cardsContainer.style.width = '100%';
             cardsContainer.style.float = 'none';
             cardsContainer.classList.remove('beginner-mode');
-            
-            // Mostrar panel de repetidos si hay números repetidos
             updateRepeatedNumbersPanel();
         } else { // Modo tradicional
             if (allNumbersGrid) {
@@ -169,7 +166,6 @@ document.addEventListener('DOMContentLoaded', function() {
             repeatedPanel.style.display = 'none';
         }
         
-        // Actualizar visualización de celdas según el modo
         updateCellsForCurrentMode();
     }
     
@@ -275,23 +271,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             cell.addEventListener('click', function() {
-                if (gameStarted) {
-                    this.classList.toggle('marked');
-                    const isMarked = this.classList.contains('marked');
+                if (gameModeSelect.disabled) return;
+                
+                this.classList.toggle('marked');
+                const isMarked = this.classList.contains('marked');
+                
+                // Marcar/desmarcar todas las casillas con este número
+                document.querySelectorAll(`.card-cell[data-number="${number}"]`).forEach(cardCell => {
+                    cardCell.classList.toggle('marked', isMarked);
                     
-                    // Marcar/desmarcar todas las casillas con este número
-                    document.querySelectorAll(`.card-cell[data-number="${number}"]`).forEach(cardCell => {
-                        // En modo tradicional, NO marcamos automáticamente las repetidas
-                        if (currentGameMode !== 'traditional' || cardCell === this) {
-                            cardCell.classList.toggle('marked', isMarked);
-                        }
-                        
-                        // Verificar patrones para la cartilla afectada
-                        const cardIndex = cardCell.dataset.cardIndex;
-                        if (currentGameMode !== 'traditional') {
-                            checkWinPatterns(cardIndex);
-                        }
-                    });
+                    // Verificar patrones para la cartilla afectada
+                    const cardIndex = cardCell.dataset.cardIndex;
+                    checkWinPatterns(cardIndex);
+                });
+                
+                // Bloquear el selector de modo si es la primera marca
+                if (!gameStarted) {
+                    gameStarted = true;
+                    gameModeSelect.disabled = true;
+                    gameModeSelect.classList.add('disabled-select');
+                    startMessage.style.display = 'none';
                 }
             });
             
@@ -379,15 +378,17 @@ document.addEventListener('DOMContentLoaded', function() {
         cell.appendChild(marker);
         
         cell.addEventListener('click', function() {
-            if (!gameStarted) {
-                gameStarted = true;
-                gameModeSelect.disabled = true;
-            }
-            
             const currentNumber = parseInt(this.dataset.number);
             const isMarked = this.classList.toggle('marked');
             
-            // En modo tradicional, NO marcamos automáticamente las repetidas
+            // Bloquear el selector de modo si es la primera marca
+            if (!gameStarted) {
+                gameStarted = true;
+                gameModeSelect.disabled = true;
+                gameModeSelect.classList.add('disabled-select');
+                startMessage.style.display = 'none';
+            }
+            
             if (currentGameMode !== 'traditional') {
                 document.querySelectorAll(`.card-cell[data-number="${currentNumber}"]`).forEach(otherCell => {
                     if (otherCell !== this || currentGameMode === 'beginner') {
@@ -396,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // En modo principiante, actualizar el grid de números
             if (currentGameMode === 'beginner' && allNumbersGrid) {
                 const numberCell = allNumbersGrid.querySelector(`.number-cell[data-number="${currentNumber}"]`);
                 if (numberCell) {
@@ -404,7 +404,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Solo verificar patrones si no es modo tradicional
             if (currentGameMode !== 'traditional') {
                 checkWinPatterns(cardIndex);
             }
@@ -454,9 +453,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Habilitar selector de modo de juego
-        gameModeSelect.disabled = false;
         gameStarted = false;
+        gameModeSelect.disabled = false;
+        gameModeSelect.classList.remove('disabled-select');
+        startMessage.style.display = 'none';
     }
     
     function checkWinPatterns(cardIndex) {
