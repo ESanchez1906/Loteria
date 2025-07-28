@@ -555,6 +555,63 @@
             text-align: center;
         }
 
+        /* Tooltip styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Download buttons */
+        .download-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            background-color: var(--medium-green);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .download-btn:hover {
+            background-color: var(--dark-green);
+        }
+
         @media (max-width: 1200px) {
             .manual-layout {
                 grid-template-columns: 1fr;
@@ -606,6 +663,11 @@
                 flex-direction: column;
                 gap: 10px;
             }
+
+            .download-options {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -656,14 +718,17 @@
                             <span id="repeated-count">0</span>/10 números repetidos<br>
                             <span id="remaining-count">90</span> números disponibles
                         </div>
-                        <button id="fill-random" class="btn secondary">
+                        <button id="fill-random" class="btn secondary tooltip">
                             <i class="fas fa-dice"></i> Rellenar Vacíos Aleatoriamente
+                            <span class="tooltiptext">Rellena automáticamente las celdas vacías con números disponibles</span>
                         </button>
-                        <button id="reset-current-card" class="btn secondary">
+                        <button id="reset-current-card" class="btn secondary tooltip">
                             <i class="fas fa-undo"></i> Reiniciar Cartilla Actual
+                            <span class="tooltiptext">Borra todos los números de la cartilla actual</span>
                         </button>
-                        <button id="confirm-selection" class="btn">
+                        <button id="confirm-selection" class="btn tooltip">
                             <i class="fas fa-check-circle"></i> Generar Cartillas
+                            <span class="tooltiptext">Genera las 4 cartillas con los números seleccionados</span>
                         </button>
                     </div>
                     
@@ -678,8 +743,9 @@
                     <div class="selection-info">
                         <span id="selected-count">0</span>/10 números seleccionados
                     </div>
-                    <button id="auto-confirm-selection" class="btn" disabled>
+                    <button id="auto-confirm-selection" class="btn tooltip" disabled>
                         <i class="fas fa-check-circle"></i> Confirmar Selección
+                        <span class="tooltiptext">Genera cartillas con los números seleccionados (10 exactos)</span>
                     </button>
                 </div>
             </section>
@@ -689,19 +755,22 @@
                 <div class="step-header">
                     <h2><i class="fas fa-th-large"></i> Tus Cartillas de Bingo</h2>
                     <div class="step-actions">
-                        <button id="regenerate-cards" class="btn secondary">
+                        <button id="regenerate-cards" class="btn secondary tooltip">
                             <i class="fas fa-sync-alt"></i> Regenerar
+                            <span class="tooltiptext">Genera nuevas cartillas con la misma configuración</span>
                         </button>
-                        <button id="change-numbers" class="btn secondary">
+                        <button id="change-numbers" class="btn secondary tooltip">
                             <i class="fas fa-edit"></i> Cambiar Números
+                            <span class="tooltiptext">Volver a la selección de números</span>
                         </button>
                     </div>
                 </div>
                 
                 <div class="cards-container" id="cards-container"></div>
                 
-                <button id="generate-images" class="btn">
+                <button id="generate-images" class="btn tooltip">
                     <i class="fas fa-image"></i> Generar Imágenes
+                    <span class="tooltiptext">Crea imágenes visuales de tus cartillas</span>
                 </button>
             </section>
 
@@ -715,6 +784,13 @@
                 </div>
                 
                 <div class="preview-container" id="preview-container"></div>
+                
+                <div class="download-options">
+                    
+                    <button id="play-with-cards" class="btn secondary">
+                        <i class="fas fa-gamepad"></i> Jugar con estas cartillas
+                    </button>
+                </div>
             </section>
         </div>
 
@@ -743,7 +819,7 @@
                 <button id="next-card" class="btn secondary">Siguiente <i class="fas fa-chevron-right"></i></button>
                 <button id="open-play-page" class="btn secondary">
                     <i class="fas fa-gamepad"></i> Jugar con estas cartillas
-            </button>
+                </button>
             </div>
         </div>
     </div>

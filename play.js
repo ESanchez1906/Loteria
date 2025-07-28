@@ -167,6 +167,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         updateCellsForCurrentMode();
+        
+        // Mantener el estilo consistente si el juego ya comenzó
+        if (gameStarted) {
+            gameModeSelect.disabled = true;
+            gameModeSelect.classList.add('disabled-select');
+        }
     }
     
     function getRepeatedNumbers() {
@@ -271,8 +277,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             cell.addEventListener('click', function() {
-                if (gameModeSelect.disabled) return;
-                
                 this.classList.toggle('marked');
                 const isMarked = this.classList.contains('marked');
                 
