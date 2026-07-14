@@ -1,15 +1,15 @@
 var CACHE_NAME = 'loteria-campechana-v1';
 var urlsToCache = [
-    '/',
-    '/index.html',
-    '/loteria.html',
-    '/cartillas.html',
-    '/play.html',
-    '/app.js',
-    '/script.js',
-    '/play.js',
-    '/patrones.json',
-    '/manifest.json'
+    './',
+    './index.html',
+    './loteria.html',
+    './cartillas.html',
+    './play.html',
+    './app.js',
+    './script.js',
+    './play.js',
+    './patrones.json',
+    './manifest.json'
 ];
 
 // Precargar archivos del menú principal
