@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const repeatedCount = document.getElementById('repeated-count');
     const remainingCount = document.getElementById('remaining-count');
     const playWithCardsBtn = document.getElementById('play-with-cards');
+    const downloadAllPdfBtn = document.getElementById('download-all-pdf');
+    const downloadSinglePdfBtn = document.getElementById('download-single-pdf');
     
     // Elementos del modal
     const modal = document.getElementById('card-modal');
@@ -55,6 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cache de imágenes
     const imageCache = new Map();
+    
+    // Cache de canvases de previsualización para reutilizarlos en el PDF
+    let previewCanvases = [];
     
     // Estado del modal
     let currentModalCardIndex = 0;
@@ -92,6 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fillRandomBtn.addEventListener('click', fillEmptyCellsRandomly);
         openPlayPageBtn.addEventListener('click', openPlayPage);
         playWithCardsBtn.addEventListener('click', openPlayPage);
+        downloadAllPdfBtn.addEventListener('click', downloadAllAsPdf);
+        downloadSinglePdfBtn.addEventListener('click', downloadSingleAsPdf);
 
         initNumberGrids();
     }
@@ -1016,6 +1023,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const canvasPromises = bingoCards.map((card, i) => createCardImage(card, i + 1));
             const canvases = await Promise.all(canvasPromises);
             
+            // Guardar los canvases para usarlos en la exportación PDF
+            previewCanvases = canvases;
+            
             canvases.forEach((canvas, index) => {
                 const previewCard = document.createElement('div');
                 previewCard.className = 'preview-card';
@@ -1292,6 +1302,248 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('imageFormat', currentImageFormat);
         
         window.open('play.html', '_blank');
+    }
+
+    // Función para cargar una imagen como base64 usando fetch
+    async function loadImageAsBlob(src) {
+        const response = await fetch(src);
+        if (!response.ok) throw new Error('Fetch failed for ' + src);
+        const blob = await response.blob();
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+    
+    // Función para crear imagen de cartilla para PDF
+    // Carga TODAS las imágenes como base64 ANTES de dibujar en el canvas
+    // Así el canvas NUNCA se contamina
+    async function createCardImageForPdf(cardNumbers, cardIndex) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const cellSize = 150;
+        const padding = 20;
+        const margin = 40;
+        const width = 5 * cellSize + 2 * padding + 2 * margin;
+        const height = 5 * cellSize + 2 * padding + 2 * margin;
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 1. Cargar TODAS las imágenes como base64 ANTES de tocar el canvas
+        const cellData = [];
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                const number = cardNumbers[row][col];
+                let imgSrc = null;
+                
+                try {
+                    if (currentImageFormat === 'jpgA') {
+                        imgSrc = await loadImageAsBlob(`${number}A.jpg`);
+                    } else {
+                        imgSrc = await loadImageAsBlob(`${number}.${currentImageFormat}`);
+                    }
+                } catch (e1) {
+                    try {
+                        imgSrc = await loadImageAsBlob(`${number}.jpg`);
+                    } catch (e2) {
+                        imgSrc = null;
+                    }
+                }
+                
+                cellData.push({ row, col, number, imgSrc });
+            }
+        }
+        
+        // 2. Ahora dibujar todo en el canvas (ya sin riesgo de contaminación)
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(margin/2, margin/2, width - margin, height - margin);
+        ctx.setLineDash([]);
+        
+        for (const cell of cellData) {
+            const { row, col, number, imgSrc } = cell;
+            const x = margin + padding + col * cellSize;
+            const y = margin + padding + row * cellSize;
+            
+            ctx.strokeStyle = isManualMode 
+                ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#0a9396')
+                : (selectedNumbers.includes(number) ? '#ca6702' : '#0a9396');
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, cellSize, cellSize);
+            
+            if (imgSrc) {
+                try {
+                    const img = await new Promise((resolve, reject) => {
+                        const image = new Image();
+                        image.onload = () => resolve(image);
+                        image.onerror = reject;
+                        image.src = imgSrc;
+                    });
+                    
+                    const imgPadding = 5;
+                    ctx.drawImage(
+                        img, 
+                        x + imgPadding, 
+                        y + imgPadding, 
+                        cellSize - 2 * imgPadding, 
+                        cellSize - 2 * imgPadding
+                    );
+                } catch (e) {
+                    // Si falla cargar la imagen desde base64, mostrar número
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
+                    ctx.fillStyle = isManualMode
+                        ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#005f73')
+                        : (selectedNumbers.includes(number) ? '#ca6702' : '#005f73');
+                    ctx.font = 'bold 36px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(number, x + cellSize/2, y + cellSize/2);
+                }
+            } else {
+                // No se pudo cargar la imagen
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
+                ctx.fillStyle = isManualMode
+                    ? ((usedNumbers.get(number) || 0) > 1 ? '#ca6702' : '#005f73')
+                    : (selectedNumbers.includes(number) ? '#ca6702' : '#005f73');
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(number, x + cellSize/2, y + cellSize/2);
+            }
+            
+            if (currentImageFormat === 'webp') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(x + 5, y + 15, 40, 30);
+                
+                ctx.fillStyle = isManualMode
+                    ? ((usedNumbers.get(number) || 0) > 1 ? '#FFD700' : 'white')
+                    : (selectedNumbers.includes(number)) ? '#FFD700' : 'white';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 3;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+                ctx.fillText(number, x + 10, y + 30);
+                ctx.shadowColor = 'transparent';
+            }
+        }
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.font = 'italic 14px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Generado por E. Sanchez', margin + 10, height - margin - 3);
+        
+        return canvas;
+    }
+
+    // Función para descargar todas las cartillas en un solo PDF
+    async function downloadAllAsPdf() {
+        if (bingoCards.length === 0) {
+            showCustomAlert('No hay cartillas generadas para exportar.');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        loader.style.display = 'flex';
+        loader.querySelector('p').textContent = 'Generando PDF...';
+
+        try {
+            const pageWidth = 297;
+            const pageHeight = 210;
+            const imageWidth = pageWidth - 10;
+            const imageHeight = pageHeight - 10;
+
+            for (let i = 0; i < bingoCards.length; i++) {
+                const canvas = await createCardImageForPdf(bingoCards[i], i + 1);
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+                if (i > 0) pdf.addPage();
+
+                pdf.setFontSize(16);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`Cartilla ${i + 1} - Lotería Campechana`, pageWidth / 2, 8, { align: 'center' });
+
+                pdf.addImage(imgData, 'JPEG', 5, 10, imageWidth, imageHeight);
+
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'italic');
+                pdf.text(`Generado por E. Sanchez - ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 2, { align: 'center' });
+            }
+
+            pdf.save(`cartillas-loteria-${Date.now()}.pdf`);
+        } catch (error) {
+            console.error('Error generando PDF:', error);
+            showCustomAlert('Ocurrió un error al generar el PDF. Detalle: ' + error.message);
+        } finally {
+            loader.style.display = 'none';
+            loader.querySelector('p').textContent = 'Generando imágenes...';
+        }
+    }
+
+    // Función para descargar una sola cartilla como PDF
+    async function downloadSingleAsPdf() {
+        if (bingoCards.length === 0) {
+            showCustomAlert('No hay cartillas generadas para exportar.');
+            return;
+        }
+
+        const cardIndex = currentModalCardIndex;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        loader.style.display = 'flex';
+        loader.querySelector('p').textContent = 'Generando PDF...';
+
+        try {
+            const pageWidth = 297;
+            const pageHeight = 210;
+            const imageWidth = pageWidth - 10;
+            const imageHeight = pageHeight - 10;
+
+            const canvas = await createCardImageForPdf(bingoCards[cardIndex], cardIndex + 1);
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`Cartilla ${cardIndex + 1} - Lotería Campechana`, pageWidth / 2, 8, { align: 'center' });
+
+            pdf.addImage(imgData, 'JPEG', 5, 10, imageWidth, imageHeight);
+
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'italic');
+            pdf.text(`Generado por E. Sanchez - ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 2, { align: 'center' });
+
+            pdf.save(`cartilla-${cardIndex + 1}-loteria-${Date.now()}.pdf`);
+        } catch (error) {
+            console.error('Error generando PDF:', error);
+            showCustomAlert('Ocurrió un error al generar el PDF. Detalle: ' + error.message);
+        } finally {
+            loader.style.display = 'none';
+            loader.querySelector('p').textContent = 'Generando imágenes...';
+        }
     }
 
     function showCustomAlert(message) {
