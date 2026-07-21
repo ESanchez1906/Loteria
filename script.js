@@ -1304,22 +1304,73 @@ document.addEventListener('DOMContentLoaded', function() {
         window.open('play.html', '_blank');
     }
 
-    // Función para cargar una imagen como base64 usando fetch
-    async function loadImageAsBlob(src) {
-        const response = await fetch(src);
-        if (!response.ok) throw new Error('Fetch failed for ' + src);
-        const blob = await response.blob();
-        return await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
+    // Cache de imágenes en base64 cargadas por el usuario
+    let loadedImagesBase64 = {};
+    
+    // Función para cargar imagen local como base64 usando XMLHttpRequest
+    // Funciona con file:// en la mayoría de navegadores
+    function loadImageAsBlobXhr(src) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', src, true);
+            xhr.responseType = 'blob';
+            xhr.onload = function() {
+                if (xhr.status === 200 || xhr.status === 0) {
+                    const blob = xhr.response;
+                    const reader = new FileReader();
+                    reader.onloadend = function() {
+                        resolve(reader.result);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                } else {
+                    reject(new Error('XHR failed: ' + xhr.status));
+                }
+            };
+            xhr.onerror = () => reject(new Error('XHR error for ' + src));
+            xhr.send();
         });
+    }
+    
+    // Función para obtener imagen en base64 - prueba múltiples métodos
+    async function getBase64Image(src) {
+        // 1. Revisar cache primero
+        if (loadedImagesBase64[src]) {
+            return loadedImagesBase64[src];
+        }
+        
+        // 2. Intentar con fetch (funciona en http://)
+        try {
+            const response = await fetch(src);
+            if (response.ok) {
+                const blob = await response.blob();
+                const dataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                loadedImagesBase64[src] = dataUrl;
+                return dataUrl;
+            }
+        } catch (e) {
+            // fetch falló, intentar XHR
+        }
+        
+        // 3. Intentar con XMLHttpRequest (funciona en algunos file://)
+        try {
+            const dataUrl = await loadImageAsBlobXhr(src);
+            loadedImagesBase64[src] = dataUrl;
+            return dataUrl;
+        } catch (e) {
+            // XHR también falló
+        }
+        
+        throw new Error('No se pudo cargar: ' + src);
     }
     
     // Función para crear imagen de cartilla para PDF
     // Carga TODAS las imágenes como base64 ANTES de dibujar en el canvas
-    // Así el canvas NUNCA se contamina
     async function createCardImageForPdf(cardNumbers, cardIndex) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -1342,14 +1393,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 try {
                     if (currentImageFormat === 'jpgA') {
-                        imgSrc = await loadImageAsBlob(`${number}A.jpg`);
+                        imgSrc = await getBase64Image(`${number}A.jpg`);
                     } else {
-                        imgSrc = await loadImageAsBlob(`${number}.${currentImageFormat}`);
+                        imgSrc = await getBase64Image(`${number}.${currentImageFormat}`);
                     }
                 } catch (e1) {
                     try {
-                        imgSrc = await loadImageAsBlob(`${number}.jpg`);
+                        imgSrc = await getBase64Image(`${number}.jpg`);
                     } catch (e2) {
+                        console.warn(`No se pudo cargar imagen para número ${number}: ${e2.message}`);
                         imgSrc = null;
                     }
                 }
@@ -1358,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 2. Ahora dibujar todo en el canvas (ya sin riesgo de contaminación)
+        // 2. Ahora dibujar todo en el canvas (imágenes son data URLs, no contamina)
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, width, height);
         
@@ -1397,7 +1449,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         cellSize - 2 * imgPadding
                     );
                 } catch (e) {
-                    // Si falla cargar la imagen desde base64, mostrar número
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                     ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
                     ctx.fillStyle = isManualMode
@@ -1409,7 +1460,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     ctx.fillText(number, x + cellSize/2, y + cellSize/2);
                 }
             } else {
-                // No se pudo cargar la imagen
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                 ctx.fillRect(x + cellSize/2 - 25, y + cellSize/2 - 25, 50, 50);
                 ctx.fillStyle = isManualMode
